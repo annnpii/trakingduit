@@ -17,7 +17,7 @@
 ## Dashboard
 - **Header:** Total saldo, Tampilkan saldo, Sembunyikan saldo, Total saldo semua dompet
 - **Info:** {n} dompet aktif · {n} transaksi bulan ini
-- **Tile:** Pemasukan, Pengeluaran, Selisih bulan ini, Rata-rata harian, Proyeksi akhir bulan, Kategori terbesar
+- **Tile:** Pemasukan, Pengeluaran, Selisih bulan ini jg berbeda. , Rata-rata harian, Proyeksi akhir bulan, Kategori terbesar
 - **Hint:** Rasio nabung {n}%, Pengeluaran per hari, Berdasarkan laju saat ini
 - **Aksi:** Scan Nota, Transaksi, Budget, Target
 

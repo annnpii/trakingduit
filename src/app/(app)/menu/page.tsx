@@ -74,7 +74,7 @@ export default function MenuPage() {
       </Button>
 
       <p className="text-center text-xs text-muted">
-        TrackingDuit v1.1.0
+        TrackingDuit v1.2.0
       </p>
     </div>
   );
