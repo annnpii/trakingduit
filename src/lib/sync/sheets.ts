@@ -58,6 +58,7 @@ async function resolveCategory(
     icon: "ellipsis",
     color: "#94a3b8",
     is_default: 0,
+    active: 1,
     keywords: [],
     created_at: nowISO(),
     updated_at: nowISO(),

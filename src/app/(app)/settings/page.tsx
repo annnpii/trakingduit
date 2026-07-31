@@ -593,6 +593,7 @@ function CategorySheet({ open, onClose }: { open: boolean; onClose: () => void }
       icon: "ellipsis",
       color: WALLET_COLORS[categories.length % WALLET_COLORS.length],
       is_default: 0,
+      active: 1,
       keywords: [name.trim().toLowerCase()],
     });
     setName("");
