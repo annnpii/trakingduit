@@ -89,10 +89,17 @@ export function TransactionSheet({
   // async wallet load doesn't need an extra state write.
   const activeWallet = walletId || wallets[0]?.id || "";
 
-  const typeCats = React.useMemo(
-    () => categories.filter((c) => c.type === (type === "income" ? "income" : "expense")),
-    [categories, type],
-  );
+  const typeCats = React.useMemo(() => {
+    const filtered = categories.filter((c) => c.type === (type === "income" ? "income" : "expense"));
+    // Deduplicate by ID to prevent looping categories
+    const uniqueMap = new Map<string, typeof filtered[0]>();
+    filtered.forEach((cat) => {
+      if (!uniqueMap.has(cat.id)) {
+        uniqueMap.set(cat.id, cat);
+      }
+    });
+    return Array.from(uniqueMap.values());
+  }, [categories, type]);
 
   React.useEffect(() => {
     if (categoryId && !typeCats.some((c) => c.id === categoryId)) setCategoryId("");

@@ -68,7 +68,8 @@ export async function seedIfEmpty(): Promise<void> {
   const d = db();
   const catCount = await d.categories.count();
   if (catCount === 0) {
-    await d.categories.bulkAdd(
+    // Use bulkPut to prevent duplicate IDs
+    await d.categories.bulkPut(
       DEFAULT_CATEGORIES.map((c) => ({
         ...c,
         created_at: nowISO(),
@@ -80,7 +81,8 @@ export async function seedIfEmpty(): Promise<void> {
   }
   const walletCount = await d.wallets.count();
   if (walletCount === 0) {
-    await d.wallets.bulkAdd(
+    // Use bulkPut to prevent duplicate IDs
+    await d.wallets.bulkPut(
       DEFAULT_WALLETS.map((w, i) => ({
         ...w,
         order: i,
