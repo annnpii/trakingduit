@@ -1,0 +1,54 @@
+{
+  "name": "TrackingDuit — Catat Keuangan",
+  "short_name": "TrackingDuit",
+  "description": "Catat pemasukan & pengeluaran, scan nota, multi-wallet, analitik, dan sinkron Google Spreadsheet.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0f16",
+  "theme_color": "#0a0f16",
+  "lang": "id",
+  "dir": "ltr",
+  "categories": ["finance", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Scan nota",
+      "short_name": "Scan",
+      "url": "/scan",
+      "description": "Foto struk dan ubah jadi transaksi"
+    },
+    {
+      "name": "Transaksi",
+      "short_name": "Transaksi",
+      "url": "/transactions",
+      "description": "Lihat dan cari catatan transaksi"
+    },
+    {
+      "name": "Analitik",
+      "short_name": "Analitik",
+      "url": "/analytics",
+      "description": "Grafik dan tren keuangan"
+    }
+  ]
+}

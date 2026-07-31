@@ -1,0 +1,175 @@
+"use client";
+
+import * as React from "react";
+import { db, resetAll, seedIfEmpty } from "./db";
+import type { UserProfile } from "./types";
+import { hashPin, newId, nowISO } from "./utils";
+import { isSupabaseConfigured, supabaseBrowser } from "./supabase";
+import { syncSupabase } from "./sync/supabase-sync";
+
+const PROFILE_ID = "me";
+const UNLOCK_KEY = "td.unlocked";
+
+export type SessionStatus = "loading" | "signed-out" | "locked" | "ready";
+
+interface SessionValue {
+  status: SessionStatus;
+  profile: UserProfile | null;
+  supabaseEnabled: boolean;
+  /** Local-only account creation / sign-in. */
+  signInLocal: (name: string, pin?: string) => Promise<void>;
+  signInSupabase: (email: string, password: string, mode: "login" | "register") => Promise<void>;
+  unlock: (pin: string) => Promise<boolean>;
+  lock: () => void;
+  signOut: () => Promise<void>;
+  updateProfile: (patch: Partial<UserProfile>) => Promise<void>;
+}
+
+const Ctx = React.createContext<SessionValue | null>(null);
+
+export function useSession() {
+  const ctx = React.useContext(Ctx);
+  if (!ctx) throw new Error("useSession must be used inside <SessionProvider>");
+  return ctx;
+}
+
+export function SessionProvider({ children }: { children: React.ReactNode }) {
+  const [status, setStatus] = React.useState<SessionStatus>("loading");
+  const [profile, setProfile] = React.useState<UserProfile | null>(null);
+
+  const resolve = React.useCallback(async () => {
+    const row = await db().profile.get(PROFILE_ID);
+    if (!row) {
+      setProfile(null);
+      setStatus("signed-out");
+      return;
+    }
+    await seedIfEmpty();
+    setProfile(row);
+    const unlocked = sessionStorage.getItem(UNLOCK_KEY) === "1";
+    setStatus(row.pin_hash && !unlocked ? "locked" : "ready");
+  }, []);
+
+  React.useEffect(() => {
+    void resolve();
+  }, [resolve]);
+
+  const signInLocal = React.useCallback(
+    async (name: string, pin?: string) => {
+      const existing = await db().profile.get(PROFILE_ID);
+      const row: UserProfile = {
+        id: PROFILE_ID,
+        name: name.trim() || "Pengguna",
+        avatar_color: existing?.avatar_color ?? "#0f9d76",
+        created_at: existing?.created_at ?? nowISO(),
+        email: existing?.email,
+        supabase_user_id: existing?.supabase_user_id,
+        pin_hash: pin ? await hashPin(pin) : undefined,
+      };
+      await db().profile.put(row);
+      await seedIfEmpty();
+      sessionStorage.setItem(UNLOCK_KEY, "1");
+      setProfile(row);
+      setStatus("ready");
+    },
+    [],
+  );
+
+  const signInSupabase = React.useCallback(
+    async (email: string, password: string, mode: "login" | "register") => {
+      const sb = supabaseBrowser();
+      if (!sb) throw new Error("Supabase belum dikonfigurasi");
+      const { data, error } =
+        mode === "login"
+          ? await sb.auth.signInWithPassword({ email, password })
+          : await sb.auth.signUp({ email, password });
+      if (error) throw new Error(error.message);
+      // Kalau konfirmasi email aktif, signUp balik user TANPA session. Tanpa cek ini
+      // app terlihat "sudah login" padahal sinkron diam-diam mati (tidak ada sesi).
+      if (!data.session) {
+        throw new Error(
+          "Akun dibuat. Cek email untuk konfirmasi dulu, lalu masuk lagi lewat tab Akun Cloud.",
+        );
+      }
+      const uid = data.user?.id ?? newId();
+      const existing = await db().profile.get(PROFILE_ID);
+      if (existing?.supabase_user_id && existing.supabase_user_id !== uid) {
+        await resetAll();
+      }
+      const row: UserProfile = {
+        id: PROFILE_ID,
+        name: existing?.name ?? email.split("@")[0],
+        email,
+        avatar_color: existing?.avatar_color ?? "#0f9d76",
+        created_at: existing?.created_at ?? nowISO(),
+        pin_hash: existing?.pin_hash,
+        supabase_user_id: uid,
+      };
+      await db().profile.put(row);
+      sessionStorage.setItem(UNLOCK_KEY, "1");
+      setProfile(row);
+      setStatus("ready");
+    },
+    [],
+  );
+
+  const unlock = React.useCallback(
+    async (pin: string) => {
+      if (!profile?.pin_hash) return false;
+      const ok = (await hashPin(pin)) === profile.pin_hash;
+      if (ok) {
+        sessionStorage.setItem(UNLOCK_KEY, "1");
+        setStatus("ready");
+      }
+      return ok;
+    },
+    [profile],
+  );
+
+  const lock = React.useCallback(() => {
+    sessionStorage.removeItem(UNLOCK_KEY);
+    if (profile?.pin_hash) setStatus("locked");
+  }, [profile]);
+
+  const signOut = React.useCallback(async () => {
+    const sb = supabaseBrowser();
+    if (sb) {
+      try {
+        // Sync one last time before signing out and clearing local DB
+        await syncSupabase();
+      } catch (e) {
+        console.error("Failed to sync before signing out:", e);
+      }
+      await sb.auth.signOut();
+    }
+    sessionStorage.removeItem(UNLOCK_KEY);
+    await resetAll();
+    setProfile(null);
+    setStatus("signed-out");
+  }, []);
+
+  const updateProfile = React.useCallback(
+    async (patch: Partial<UserProfile>) => {
+      const current = await db().profile.get(PROFILE_ID);
+      if (!current) return;
+      const next = { ...current, ...patch };
+      await db().profile.put(next);
+      setProfile(next);
+    },
+    [],
+  );
+
+  const value: SessionValue = {
+    status,
+    profile,
+    supabaseEnabled: isSupabaseConfigured,
+    signInLocal,
+    signInSupabase,
+    unlock,
+    lock,
+    signOut,
+    updateProfile,
+  };
+
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}

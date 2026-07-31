@@ -1,0 +1,17 @@
+# Vercel CLI hanya membaca file ini kalau folder BUKAN git repo.
+# Tanpa ini, `vercel deploy` dari folder ini mengunggah ~1.5 GB (node_modules + .next).
+node_modules
+.next
+out
+build
+coverage
+*.tsbuildinfo
+
+# Rahasia — env var diset lewat dashboard/CLI Vercel, bukan diunggah.
+.env
+.env.*
+!.env.example
+
+.vercel
+.claude
+.agents

@@ -1,0 +1,403 @@
+"use client";
+
+import * as React from "react";
+import Image from "next/image";
+import { useLiveQuery } from "dexie-react-hooks";
+import {
+  Camera,
+  Check,
+  FileText,
+  ImageUp,
+  RefreshCw,
+  ScanLine,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
+import { db } from "@/lib/db";
+import { createReceipt, deleteReceipt, guessCategory, updateReceipt } from "@/lib/repo";
+import { prepareImage, runOcr } from "@/lib/ocr/client";
+import { parseReceipt } from "@/lib/ocr/parser";
+import type { ParsedReceipt, Receipt } from "@/lib/types";
+import { cn, formatIDR, toDateKey } from "@/lib/utils";
+import {
+  Badge,
+  Button,
+  Card,
+  CardHeader,
+  EmptyState,
+  Progress,
+  Sheet,
+  useToast,
+} from "@/components/ui";
+import { TransactionSheet, type TransactionDraft } from "@/components/transactions/transaction-sheet";
+
+export default function ScanPage() {
+  const toast = useToast();
+  const cameraRef = React.useRef<HTMLInputElement>(null);
+  const fileRef = React.useRef<HTMLInputElement>(null);
+
+  const [busy, setBusy] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+  const [stage, setStage] = React.useState("");
+  const [current, setCurrent] = React.useState<Receipt | null>(null);
+  const [draft, setDraft] = React.useState<TransactionDraft | null>(null);
+  const [rawOpen, setRawOpen] = React.useState(false);
+
+  const receipts = useLiveQuery(
+    () => db().receipts.filter((r) => !r.deleted).reverse().sortBy("created_at"),
+    [],
+    [],
+  );
+
+  async function handleFile(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast("File harus berupa gambar", "error");
+      return;
+    }
+    setBusy(true);
+    setProgress(0.02);
+    setStage("Menyiapkan gambar");
+    try {
+      const dataUrl = await prepareImage(file);
+      const { text, engine } = await runOcr(dataUrl, (ratio, s) => {
+        setProgress(ratio);
+        setStage(s);
+      });
+      const parsed = parseReceipt(text);
+      const receipt = await createReceipt({
+        image: dataUrl,
+        raw_text: text,
+        parsed,
+        status: "pending",
+        engine,
+      });
+      setCurrent(receipt);
+      toast(
+        parsed.total
+          ? `Terbaca: ${formatIDR(parsed.total)}${parsed.merchant ? ` di ${parsed.merchant}` : ""}`
+          : "Nota terbaca, cek hasilnya",
+        parsed.total ? "success" : "info",
+      );
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "OCR gagal", "error");
+    } finally {
+      setBusy(false);
+      setProgress(0);
+      setStage("");
+    }
+  }
+
+  async function confirmReceipt(receipt: Receipt) {
+    const wallet = await db().wallets.filter((w) => !w.deleted && !w.archived).first();
+    const guess = await guessCategory(
+      `${receipt.parsed.merchant ?? ""} ${receipt.raw_text.slice(0, 200)}`,
+      "expense",
+    );
+    setDraft({
+      type: "expense",
+      amount: receipt.parsed.total ?? 0,
+      merchant: receipt.parsed.merchant,
+      date: receipt.parsed.date ?? toDateKey(),
+      wallet_id: wallet?.id,
+      category_id: guess?.id,
+      note: receipt.parsed.items
+        .slice(0, 4)
+        .map((i) => i.name)
+        .join(", "),
+      receipt_id: receipt.id,
+      source: "ocr",
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+      />
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+      />
+
+      <Card className="p-5">
+        <div className="flex items-start gap-4">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand/10 text-brand">
+            <ScanLine className="size-6" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-semibold">Scan nota belanja</h2>
+            <p className="mt-1 text-xs text-muted">
+              Foto struk, nominal dan merchant terisi otomatis. Hasil selalu bisa dikoreksi sebelum
+              disimpan.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button onClick={() => cameraRef.current?.click()} disabled={busy}>
+                <Camera className="size-4" /> Ambil foto
+              </Button>
+              <Button variant="secondary" onClick={() => fileRef.current?.click()} disabled={busy}>
+                <ImageUp className="size-4" /> Pilih gambar
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {busy ? (
+          <div className="mt-4">
+            <div className="mb-1.5 flex items-center justify-between text-xs text-muted">
+              <span>{stage}</span>
+              <span className="num">{Math.round(progress * 100)}%</span>
+            </div>
+            <Progress value={progress * 100} />
+          </div>
+        ) : null}
+      </Card>
+
+      {current ? (
+        <ReceiptDetail
+          receipt={current}
+          onConfirm={() => confirmReceipt(current)}
+          onShowRaw={() => setRawOpen(true)}
+          onPatch={async (patch) => {
+            const next = { ...current, parsed: { ...current.parsed, ...patch } };
+            await updateReceipt(current.id, { parsed: next.parsed });
+            setCurrent(next);
+          }}
+        />
+      ) : null}
+
+      <Card className="overflow-hidden">
+        <CardHeader title="Riwayat scan" subtitle={`${receipts.length} nota`} />
+        {receipts.length ? (
+          <ul className="mt-2 divide-y divide-border border-t border-border">
+            {receipts.map((r) => (
+              <li key={r.id} className="flex items-center gap-3 px-4 py-3">
+                {r.image ? (
+                  <Image
+                    src={r.image}
+                    alt="Nota"
+                    width={40}
+                    height={52}
+                    unoptimized
+                    className="h-13 w-10 rounded-lg border border-border object-cover"
+                  />
+                ) : (
+                  <span className="grid h-13 w-10 place-items-center rounded-lg border border-border text-muted">
+                    <FileText className="size-4" />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {r.parsed.merchant ?? "Nota tanpa nama"}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {r.parsed.date ?? r.created_at.slice(0, 10)} ·{" "}
+                    {r.engine === "google-vision" ? "Vision" : "Tesseract"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="num text-sm font-medium">
+                    {r.parsed.total ? formatIDR(r.parsed.total) : "—"}
+                  </span>
+                  <Badge tone={r.status === "confirmed" ? "income" : "warn"}>
+                    {r.status === "confirmed" ? "Tersimpan" : "Pending"}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Buka"
+                    onClick={() => setCurrent(r)}
+                  >
+                    <RefreshCw className="size-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Hapus"
+                    onClick={async () => {
+                      await deleteReceipt(r.id);
+                      if (current?.id === r.id) setCurrent(null);
+                    }}
+                  >
+                    <Trash2 className="size-3.5 text-expense" />
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState
+            icon={ScanLine}
+            title="Belum ada nota"
+            description="Hasil scan tersimpan di perangkat, termasuk teks mentah OCR."
+          />
+        )}
+      </Card>
+
+      <Sheet
+        open={rawOpen}
+        onClose={() => setRawOpen(false)}
+        title="Teks mentah OCR"
+        description="Dipakai untuk mengecek hasil parsing"
+        size="lg"
+      >
+        <pre className="whitespace-pre-wrap text-xs text-muted">{current?.raw_text}</pre>
+      </Sheet>
+
+      <TransactionSheet
+        open={Boolean(draft)}
+        draft={draft ?? undefined}
+        onClose={() => setDraft(null)}
+        onSaved={async () => {
+          if (current) {
+            await updateReceipt(current.id, { status: "confirmed" });
+            setCurrent({ ...current, status: "confirmed" });
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+function ReceiptDetail({
+  receipt,
+  onConfirm,
+  onShowRaw,
+  onPatch,
+}: {
+  receipt: Receipt;
+  onConfirm: () => void;
+  onShowRaw: () => void;
+  onPatch: (patch: Partial<ParsedReceipt>) => void;
+}) {
+  const p = receipt.parsed;
+  const lowConfidence = p.confidence < 0.6;
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader
+        title="Hasil pembacaan"
+        subtitle={`Akurasi perkiraan ${Math.round(p.confidence * 100)}% · ${
+          receipt.engine === "google-vision" ? "Google Vision" : "Tesseract"
+        }`}
+        action={
+          <Button variant="ghost" size="sm" onClick={onShowRaw}>
+            <FileText className="size-3.5" /> Teks mentah
+          </Button>
+        }
+      />
+      <div className="grid gap-4 p-4 sm:grid-cols-[160px_1fr]">
+        {receipt.image ? (
+          <Image
+            src={receipt.image}
+            alt="Nota"
+            width={320}
+            height={420}
+            unoptimized
+            className="max-h-64 w-full rounded-xl border border-border object-cover sm:max-h-none"
+          />
+        ) : null}
+
+        <div className="space-y-3">
+          {lowConfidence ? (
+            <p className="flex items-start gap-2 rounded-xl border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-warn">
+              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+              Hasil kurang yakin. Cek nominal dan tanggal sebelum menyimpan.
+            </p>
+          ) : null}
+
+          <div className="grid grid-cols-2 gap-3">
+            <EditableField
+              label="Merchant"
+              value={p.merchant ?? ""}
+              onChange={(v) => onPatch({ merchant: v || undefined })}
+            />
+            <EditableField
+              label="Tanggal"
+              type="date"
+              value={p.date ?? toDateKey()}
+              onChange={(v) => onPatch({ date: v })}
+            />
+            <EditableField
+              label="Total"
+              inputMode="numeric"
+              value={p.total != null ? String(p.total) : ""}
+              onChange={(v) => onPatch({ total: Number(v.replace(/\D/g, "")) || undefined })}
+              hint={p.total ? formatIDR(p.total) : undefined}
+            />
+            <EditableField
+              label="Pajak / PPN"
+              inputMode="numeric"
+              value={p.tax != null ? String(p.tax) : ""}
+              onChange={(v) => onPatch({ tax: Number(v.replace(/\D/g, "")) || undefined })}
+            />
+          </div>
+
+          {p.items.length ? (
+            <div className="rounded-xl border border-border">
+              <p className="border-b border-border px-3 py-2 text-xs font-medium">
+                Item terbaca ({p.items.length})
+              </p>
+              <ul className="max-h-40 divide-y divide-border overflow-y-auto text-xs">
+                {p.items.map((item, i) => (
+                  <li key={i} className="flex items-center justify-between gap-3 px-3 py-1.5">
+                    <span className="truncate">
+                      {item.qty ? `${item.qty}× ` : ""}
+                      {item.name}
+                    </span>
+                    <span className="num text-muted">{formatIDR(item.price)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <Button
+            className={cn("w-full", receipt.status === "confirmed" && "opacity-70")}
+            onClick={onConfirm}
+          >
+            <Check className="size-4" />
+            {receipt.status === "confirmed" ? "Catat lagi dari nota ini" : "Jadikan transaksi"}
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function EditableField({
+  label,
+  value,
+  onChange,
+  hint,
+  type = "text",
+  inputMode,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  hint?: string;
+  type?: string;
+  inputMode?: "numeric" | "text";
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[11px] text-muted">{label}</span>
+      <input
+        type={type}
+        inputMode={inputMode}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-2 text-sm outline-none focus:border-brand"
+      />
+      {hint ? <span className="mt-0.5 block text-[11px] text-muted">{hint}</span> : null}
+    </label>
+  );
+}

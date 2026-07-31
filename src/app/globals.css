@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  color-scheme: light;
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --border: #e3e6ec;
+  --fg: #0f172a;
+  --fg-muted: #64748b;
+  --brand: #0f9d76;
+  --brand-fg: #ffffff;
+  --income: #0f9d76;
+  --expense: #e04f5f;
+  --warn: #d98324;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0f16;
+  --surface: #121924;
+  --surface-2: #172130;
+  --border: #232f40;
+  --fg: #e8edf5;
+  --fg-muted: #8697ad;
+  --brand: #2ee6a8;
+  --brand-fg: #04140f;
+  --income: #2ee6a8;
+  --expense: #ff7b8a;
+  --warn: #f2b544;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-brand: var(--brand);
+  --color-brand-fg: var(--brand-fg);
+  --color-income: var(--income);
+  --color-expense: var(--expense);
+  --color-warn: var(--warn);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px; /* stop iOS zoom-on-focus */
+}
+
+@utility num {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes td-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-rise {
+  animation: td-rise 0.28s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise {
+    animation: none;
+  }
+}
+
+.safe-b {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

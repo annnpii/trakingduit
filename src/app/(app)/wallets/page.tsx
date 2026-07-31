@@ -1,0 +1,382 @@
+"use client";
+
+import * as React from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { Archive, ArchiveRestore, Pencil, Plus, Trash2, Wallet as WalletIcon } from "lucide-react";
+import { db } from "@/lib/db";
+import { allWalletBalances, createWallet, deleteWallet, updateWallet } from "@/lib/repo";
+import { WALLET_COLORS, WALLET_TYPE_LABEL } from "@/lib/seed";
+import type { Wallet, WalletType } from "@/lib/types";
+import { cn, formatIDR, parseAmount } from "@/lib/utils";
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  Input,
+  Select,
+  Sheet,
+  useToast,
+} from "@/components/ui";
+import { DynIcon, ICON_NAMES } from "@/components/ui/icon";
+
+export default function WalletsPage() {
+  const toast = useToast();
+  const [editing, setEditing] = React.useState<Wallet | null>(null);
+  const [open, setOpen] = React.useState(false);
+
+  const wallets = useLiveQuery(() => db().wallets.filter((w) => !w.deleted).sortBy("order"), [], []);
+  const balances = useLiveQuery(
+    async () => {
+      await db().transactions.count();
+      return allWalletBalances();
+    },
+    [],
+    {} as Record<string, number>,
+  );
+  const txCounts = useLiveQuery(
+    async () => {
+      const txs = await db().transactions.filter((t) => !t.deleted).toArray();
+      const map: Record<string, number> = {};
+      for (const t of txs) {
+        map[t.wallet_id] = (map[t.wallet_id] ?? 0) + 1;
+        if (t.to_wallet_id) map[t.to_wallet_id] = (map[t.to_wallet_id] ?? 0) + 1;
+      }
+      return map;
+    },
+    [],
+    {} as Record<string, number>,
+  );
+
+  const active = wallets.filter((w) => !w.archived);
+  const archived = wallets.filter((w) => w.archived);
+  const total = active.reduce((a, w) => a + (balances[w.id] ?? 0), 0);
+
+  async function toggleArchive(w: Wallet) {
+    await updateWallet(w.id, { archived: w.archived ? 0 : 1 });
+    toast(w.archived ? "Dompet diaktifkan" : "Dompet diarsipkan", "success");
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card className="flex items-center justify-between p-5">
+        <div>
+          <p className="text-xs text-muted">Total saldo semua dompet</p>
+          <p className="num mt-1 text-2xl font-semibold">{formatIDR(total)}</p>
+          <p className="mt-1 text-xs text-muted">{active.length} dompet aktif</p>
+        </div>
+        <Button
+          onClick={() => {
+            setEditing(null);
+            setOpen(true);
+          }}
+        >
+          <Plus className="size-4" /> Tambah Dompet
+        </Button>
+      </Card>
+
+      {active.length ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {active.map((w) => (
+            <WalletCard
+              key={w.id}
+              wallet={w}
+              balance={balances[w.id] ?? 0}
+              txCount={txCounts[w.id] ?? 0}
+              onEdit={() => {
+                setEditing(w);
+                setOpen(true);
+              }}
+              onArchive={() => toggleArchive(w)}
+              onDelete={async () => {
+                if (window.confirm("Yakin ingin menghapus dompet ini?")) {
+                  const res = await deleteWallet(w.id);
+                  toast(
+                    res.archived
+                      ? `Dompet punya ${res.txCount} transaksi — diarsipkan, bukan dihapus`
+                      : "Dompet dihapus",
+                    "success",
+                  );
+                }
+              }}
+            />
+          ))}
+        </div>
+      ) : (
+        <Card>
+          <EmptyState
+            icon={WalletIcon}
+            title="Belum ada dompet"
+            description="Tambahkan dompet tunai, rekening bank, atau e-wallet."
+            action={
+              <Button
+                size="sm"
+                onClick={() => {
+                  setEditing(null);
+                  setOpen(true);
+                }}
+              >
+                <Plus className="size-4" /> Tambah dompet
+              </Button>
+            }
+          />
+        </Card>
+      )}
+
+      {archived.length ? (
+        <section>
+          <h2 className="mb-2 px-1 text-xs font-medium text-muted">Diarsipkan</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {archived.map((w) => (
+              <WalletCard
+                key={w.id}
+                wallet={w}
+                balance={balances[w.id] ?? 0}
+                txCount={txCounts[w.id] ?? 0}
+                onEdit={() => {
+                  setEditing(w);
+                  setOpen(true);
+                }}
+                onArchive={() => toggleArchive(w)}
+                onDelete={async () => {
+                  if (window.confirm("Yakin ingin menghapus dompet ini?")) {
+                    const res = await deleteWallet(w.id);
+                    toast(
+                      res.archived
+                        ? `Dompet punya ${res.txCount} transaksi — diarsipkan, bukan dihapus`
+                        : "Dompet dihapus",
+                      "success",
+                    );
+                  }
+                }}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <WalletSheet
+        open={open}
+        wallet={editing}
+        walletCount={wallets.length}
+        onClose={() => {
+          setOpen(false);
+          setEditing(null);
+        }}
+      />
+    </div>
+  );
+}
+
+function WalletCard({
+  wallet,
+  balance,
+  txCount,
+  onEdit,
+  onArchive,
+  onDelete,
+}: {
+  wallet: Wallet;
+  balance: number;
+  txCount: number;
+  onEdit: () => void;
+  onArchive: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <Card className={cn("p-4", wallet.archived && "opacity-60")}>
+      <div className="flex items-start justify-between">
+        <span
+          className="grid size-11 place-items-center rounded-xl"
+          style={{ background: `${wallet.color}1f`, color: wallet.color }}
+        >
+          <DynIcon name={wallet.icon} className="size-5" />
+        </span>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Ubah dompet">
+            <Pencil className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onArchive}
+            aria-label={wallet.archived ? "Aktifkan" : "Arsipkan"}
+          >
+            {wallet.archived ? (
+              <ArchiveRestore className="size-3.5" />
+            ) : (
+              <Archive className="size-3.5" />
+            )}
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onDelete} aria-label="Hapus dompet" className="text-red-500 hover:text-red-600 hover:bg-red-500/10">
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
+      </div>
+      <p className="mt-3 truncate text-sm font-medium">{wallet.name}</p>
+      <p className={cn("num mt-0.5 text-xl font-semibold", balance < 0 && "text-expense")}>
+        {formatIDR(balance)}
+      </p>
+      <div className="mt-2 flex items-center gap-2">
+        <Badge>{WALLET_TYPE_LABEL[wallet.type]}</Badge>
+        <span className="text-[11px] text-muted">{txCount} transaksi</span>
+      </div>
+    </Card>
+  );
+}
+
+function WalletSheet({
+  open,
+  wallet,
+  walletCount,
+  onClose,
+}: {
+  open: boolean;
+  wallet: Wallet | null;
+  walletCount: number;
+  onClose: () => void;
+}) {
+  const toast = useToast();
+  const [name, setName] = React.useState("");
+  const [type, setType] = React.useState<WalletType>("cash");
+  const [initial, setInitial] = React.useState("");
+  const [color, setColor] = React.useState(WALLET_COLORS[0]);
+  const [icon, setIcon] = React.useState("wallet");
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!open) return;
+    setName(wallet?.name ?? "");
+    setType(wallet?.type ?? "cash");
+    setInitial(wallet ? new Intl.NumberFormat("id-ID").format(wallet.initial_balance) : "");
+    setColor(wallet?.color ?? WALLET_COLORS[0]);
+    setIcon(wallet?.icon ?? "wallet");
+  }, [open, wallet]);
+
+  async function save() {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      const payload = {
+        name: name.trim(),
+        type,
+        initial_balance: parseAmount(initial),
+        currency: "IDR",
+        color,
+        icon,
+      };
+      if (wallet) {
+        await updateWallet(wallet.id, payload);
+        toast("Dompet diperbarui", "success");
+      } else {
+        await createWallet({ ...payload, archived: 0, order: walletCount });
+        toast("Dompet ditambahkan", "success");
+      }
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function remove() {
+    if (!wallet) return;
+    const res = await deleteWallet(wallet.id);
+    toast(
+      res.archived
+        ? `Dompet punya ${res.txCount} transaksi — diarsipkan, bukan dihapus`
+        : "Dompet dihapus",
+      "success",
+    );
+    onClose();
+  }
+
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={wallet ? "Ubah Dompet" : "Dompet Baru"}
+      footer={
+        <div className="flex gap-2">
+          {wallet ? (
+            <Button variant="outline" size="lg" onClick={remove}>
+              Hapus
+            </Button>
+          ) : null}
+          <Button className="flex-1" size="lg" onClick={save} disabled={!name.trim()} loading={saving}>
+            Simpan
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        <Field label="Nama dompet">
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="cth. BCA, GoPay, Dompet Tunai"
+            autoFocus
+          />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Jenis">
+            <Select value={type} onChange={(e) => setType(e.target.value as WalletType)}>
+              {Object.entries(WALLET_TYPE_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Saldo awal" hint="Saldo sebelum pencatatan dimulai">
+            <Input
+              inputMode="numeric"
+              value={initial}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, "");
+                const formatted = digits ? new Intl.NumberFormat("id-ID").format(Number(digits)) : "";
+                setInitial(formatted);
+              }}
+              placeholder="0"
+            />
+          </Field>
+        </div>
+
+        <Field label="Warna">
+          <div className="flex flex-wrap gap-2">
+            {WALLET_COLORS.map((c) => (
+              <button
+                key={c}
+                onClick={() => setColor(c)}
+                aria-label={`Warna ${c}`}
+                className={cn(
+                  "size-8 rounded-lg border-2 transition",
+                  color === c ? "border-fg scale-110" : "border-transparent",
+                )}
+                style={{ background: c }}
+              />
+            ))}
+          </div>
+        </Field>
+
+        <Field label="Ikon">
+          <div className="grid grid-cols-8 gap-2">
+            {ICON_NAMES.map((n) => (
+              <button
+                key={n}
+                onClick={() => setIcon(n)}
+                aria-label={n}
+                className={cn(
+                  "grid aspect-square place-items-center rounded-lg border transition",
+                  icon === n ? "border-brand bg-brand/10 text-brand" : "border-border text-muted",
+                )}
+              >
+                <DynIcon name={n} className="size-4" />
+              </button>
+            ))}
+          </div>
+        </Field>
+      </div>
+    </Sheet>
+  );
+}
