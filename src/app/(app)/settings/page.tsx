@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
+  ChevronRight,
   CloudUpload,
   Database,
   FileSpreadsheet,
@@ -19,6 +20,7 @@ import {
   TriangleAlert,
   Upload,
 } from "lucide-react";
+import Link from "next/link";
 import { db, resetAll } from "@/lib/db";
 import { createCategory, deleteCategory } from "@/lib/repo";
 import { useSession } from "@/lib/session";
@@ -233,6 +235,17 @@ export default function SettingsPage() {
             Preferensi disimpan di perangkat ini.
           </p>
         </div>
+      </Card>
+
+      {/* Categories */}
+      <Card>
+        <Link href="/settings/categories" className="flex items-center justify-between p-4 transition hover:bg-surface-2">
+          <div>
+            <p className="text-sm font-semibold">Kategori</p>
+            <p className="text-xs text-muted">Atur kategori yang aktif di transaksi</p>
+          </div>
+          <ChevronRight className="size-4 text-muted" />
+        </Link>
       </Card>
 
       {/* Sync */}

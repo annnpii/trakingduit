@@ -90,7 +90,9 @@ export function TransactionSheet({
   const activeWallet = walletId || wallets[0]?.id || "";
 
   const typeCats = React.useMemo(() => {
-    const filtered = categories.filter((c) => c.type === (type === "income" ? "income" : "expense"));
+    const filtered = categories.filter(
+      (c) => c.type === (type === "income" ? "income" : "expense") && c.active === 1
+    );
     // Deduplicate by ID to prevent looping categories
     const uniqueMap = new Map<string, typeof filtered[0]>();
     filtered.forEach((cat) => {

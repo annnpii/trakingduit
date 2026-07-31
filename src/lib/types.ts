@@ -35,6 +35,8 @@ export interface Category extends Syncable {
   icon: string;
   color: string;
   is_default: 0 | 1;
+  /** User can toggle this to hide category from transaction form. */
+  active: 0 | 1;
   /** Keywords used by the OCR parser + auto-categorizer. */
   keywords: string[];
 }

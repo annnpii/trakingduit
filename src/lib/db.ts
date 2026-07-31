@@ -106,6 +106,16 @@ export class TrackingDuitDB extends Dexie {
         await tx.table("wallets").bulkAdd(toRestoreW);
       }
     });
+
+    // Version 4: add active field to existing categories, default all to active
+    this.version(4).upgrade(async (tx) => {
+      const cats = await tx.table("categories").toArray();
+      for (const cat of cats) {
+        if (cat.active === undefined) {
+          await tx.table("categories").update(cat.id, { active: 1 });
+        }
+      }
+    });
   }
 }
 
@@ -129,6 +139,7 @@ export async function seedIfEmpty(): Promise<void> {
         updated_at: nowISO(),
         deleted: 0 as const,
         is_default: 1 as const,
+        active: 1 as const,
       })),
     );
   }
