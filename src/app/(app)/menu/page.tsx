@@ -72,6 +72,10 @@ export default function MenuPage() {
       <Button variant="outline" className="w-full" onClick={() => signOut()}>
         <LogOut className="size-4" /> Keluar
       </Button>
+
+      <p className="text-center text-xs text-muted">
+        TrackingDuit v1.1.0
+      </p>
     </div>
   );
 }

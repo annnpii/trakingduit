@@ -53,6 +53,59 @@ export class TrackingDuitDB extends Dexie {
       settings: "key",
       profile: "id",
     });
+
+    // Version 3: cleanup duplicate categories and wallets
+    this.version(3).upgrade(async (tx) => {
+      const cats = await tx.table("categories").toArray();
+      const seenCatIds = new Set<string>();
+      const dupes: string[] = [];
+      
+      for (const cat of cats) {
+        if (seenCatIds.has(cat.id)) {
+          dupes.push(cat.id);
+        } else {
+          seenCatIds.add(cat.id);
+        }
+      }
+      
+      // Delete all duplicates, then re-insert single copy
+      if (dupes.length > 0) {
+        await tx.table("categories").bulkDelete(dupes);
+        const uniqueCats = cats.filter((c) => dupes.includes(c.id));
+        const seen = new Set<string>();
+        const toRestore = uniqueCats.filter((c) => {
+          if (seen.has(c.id)) return false;
+          seen.add(c.id);
+          return true;
+        });
+        await tx.table("categories").bulkAdd(toRestore);
+      }
+
+      // Same for wallets
+      const wallets = await tx.table("wallets").toArray();
+      const seenWalletIds = new Set<string>();
+      const walletDupes: string[] = [];
+      
+      for (const w of wallets) {
+        if (seenWalletIds.has(w.id)) {
+          walletDupes.push(w.id);
+        } else {
+          seenWalletIds.add(w.id);
+        }
+      }
+      
+      if (walletDupes.length > 0) {
+        await tx.table("wallets").bulkDelete(walletDupes);
+        const uniqueWallets = wallets.filter((w) => walletDupes.includes(w.id));
+        const seenW = new Set<string>();
+        const toRestoreW = uniqueWallets.filter((w) => {
+          if (seenW.has(w.id)) return false;
+          seenW.add(w.id);
+          return true;
+        });
+        await tx.table("wallets").bulkAdd(toRestoreW);
+      }
+    });
   }
 }
 
