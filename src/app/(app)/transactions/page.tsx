@@ -125,29 +125,27 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
-        <div className="flex items-center justify-between gap-2 w-full sm:w-auto">
-          <div className="flex-1 sm:flex-none">
-            <MonthSwitcher value={month} onChange={setMonth} />
-          </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <MonthSwitcher value={month} onChange={setMonth} className="flex-1 sm:w-36" />
           <Button
             variant={showFilters || activeFilters ? "secondary" : "ghost"}
             size="icon"
             onClick={() => setShowFilters((v) => !v)}
             aria-label="Filter"
-            className="sm:hidden size-9"
+            className="sm:hidden size-9 shrink-0"
           >
             <SlidersHorizontal className="size-4" />
           </Button>
         </div>
-        <div className="flex items-center gap-2 w-full">
+        <div className="flex items-center gap-2 w-full flex-1">
           <div className="relative flex-1">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari tempat belanja, catatan, nominal…"
-              className="pl-9 w-full placeholder:text-xs"
+              placeholder="Cari merchant, catatan, nominal…"
+              className="pl-9 w-full text-xs sm:text-sm placeholder:text-[11px] h-9 sm:h-10"
             />
           </div>
           <Button
@@ -155,7 +153,7 @@ export default function TransactionsPage() {
             size="icon"
             onClick={() => setShowFilters((v) => !v)}
             aria-label="Filter"
-            className="hidden sm:inline-flex size-9"
+            className="hidden sm:inline-flex size-9 shrink-0"
           >
             <SlidersHorizontal className="size-4" />
           </Button>

@@ -162,17 +162,17 @@ export default function BillsPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full sm:flex sm:w-auto sm:justify-end">
+      <div className="flex flex-row items-center gap-2 w-full sm:w-auto sm:justify-end">
         <Button 
           variant="outline" 
-          className="text-[11px] sm:text-xs md:text-sm h-9 sm:h-10 px-1 sm:px-4 w-full"
+          className="text-[10px] sm:text-xs md:text-sm h-9 sm:h-10 px-2 sm:px-4 flex-1 sm:flex-none"
           onClick={() => setSalaryOpen(true)}
         >
           Set Gaji
         </Button>
         <Button
           variant="secondary"
-          className="text-[11px] sm:text-xs md:text-sm h-9 sm:h-10 px-1 sm:px-4 w-full"
+          className="text-[10px] sm:text-xs md:text-sm h-9 sm:h-10 px-2 sm:px-4 flex-1 sm:flex-none"
           onClick={async () => {
             const n = await runBillReminderScan();
             toast(n ? `${n} pengingat dibuat` : "Tidak ada pengingat baru", "success");
@@ -182,13 +182,13 @@ export default function BillsPage() {
           <span className="truncate">Reminder</span>
         </Button>
         <Button
-          className="text-[11px] sm:text-xs md:text-sm h-9 sm:h-10 px-1 sm:px-4 w-full"
+          className="text-[10px] sm:text-xs md:text-sm h-9 sm:h-10 px-2 sm:px-4 flex-1 sm:flex-none"
           onClick={() => {
             setEditing(null);
             setOpen(true);
           }}
         >
-          <Plus className="size-3 sm:size-4 shrink-0" /> Tagihan
+          <Plus className="size-3 sm:size-4 shrink-0" /> <span className="truncate">Tagihan</span>
         </Button>
       </div>
 
@@ -220,20 +220,20 @@ export default function BillsPage() {
             const remainingAmount = remainingPayments * (b.installment_amount_per_period ?? b.amount);
 
             return (
-              <Card key={b.id} className={cn("p-3 sm:p-4 flex flex-col justify-between", b.archived && "opacity-60")}>
+              <Card key={b.id} className={cn("p-2.5 sm:p-4 flex flex-col justify-between", b.archived && "opacity-60")}>
                 <div>
                   <div className="flex items-start justify-between gap-1 sm:gap-3">
-                    <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-3">
                       <span
                         className={cn(
-                          "grid size-7 sm:size-10 shrink-0 place-items-center rounded-full text-xs sm:text-base",
+                          "hidden xs:grid size-7 sm:size-10 shrink-0 place-items-center rounded-full text-xs sm:text-base",
                           late ? "bg-expense/10 text-expense" : "bg-warn/10 text-warn",
                         )}
                       >
                         <CalendarClock className="size-3.5 sm:size-4.5" />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs sm:text-sm font-semibold leading-tight">{b.name}</p>
+                        <p className="text-xs sm:text-sm font-semibold leading-tight break-words line-clamp-2">{b.name}</p>
                         <p className="text-[9px] sm:text-[11px] text-muted truncate mt-0.5">
                           {formatDate(b.due_date)} {!b.is_installment && `· ${REPEAT_LABEL[b.repeat]}`}
                         </p>
@@ -275,11 +275,11 @@ export default function BillsPage() {
                       {remainingPayments > 0 ? (
                         <>
                           <div className="flex justify-between">
-                            <span>Sisa tenor:</span>
+                            <span>Sisa:</span>
                             <span className="text-fg font-medium">{remainingPayments}x lagi</span>
                           </div>
                           <div className="flex justify-between border-t border-border/40 pt-0.5 mt-0.5 text-brand">
-                            <span>Sisa utang:</span>
+                            <span>Utang:</span>
                             <span className="font-semibold">{formatIDR(remainingAmount)}</span>
                           </div>
                         </>
@@ -289,10 +289,10 @@ export default function BillsPage() {
                     </div>
                   )}
 
-                  <div className="mt-2.5 flex items-center justify-between flex-wrap gap-1">
-                    <span className="num text-sm sm:text-lg font-bold">{formatIDR(b.amount)}</span>
+                  <div className="mt-2 flex items-center justify-between flex-wrap gap-1">
+                    <span className="num text-xs sm:text-base font-bold truncate max-w-full">{formatIDR(b.amount)}</span>
                     <Badge 
-                      className="text-[9px] sm:text-[11px] px-1 sm:px-2 py-0"
+                      className="text-[8px] sm:text-[10px] px-1 sm:px-2 py-0 shrink-0"
                       tone={b.archived ? "neutral" : late ? "expense" : days <= 3 ? "warn" : "brand"}
                     >
                       {b.archived
@@ -307,40 +307,41 @@ export default function BillsPage() {
                 </div>
 
                 {!b.archived && !(b.is_installment && remainingPayments <= 0) ? (
-                  <div className="mt-2.5 flex gap-1.5">
+                  <div className="mt-2.5 flex items-center gap-1 w-full justify-between">
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="flex-1 text-[10px] sm:text-xs h-7 sm:h-8"
+                      className="flex-1 text-[10px] sm:text-xs h-7 sm:h-8 px-1.5 min-w-0"
                       onClick={async () => {
                         await payBill(b.id);
                         toast(`${b.name} ditandai lunas`, "success");
                       }}
                     >
-                      <Check className="size-3 sm:size-3.5" /> Lunas
-                      {b.auto_create_tx ? " + catat" : ""}
+                      <Check className="size-3 shrink-0 mr-0.5" /> <span className="truncate">Lunas{b.auto_create_tx ? " + catat" : ""}</span>
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="sm:hidden size-7"
-                      aria-label="Edit"
-                      onClick={() => {
-                        setEditing(b);
-                        setOpen(true);
-                      }}
-                    >
-                      <Pencil className="size-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="sm:hidden size-7"
-                      aria-label="Hapus"
-                      onClick={() => setDeleteConfirm(b)}
-                    >
-                      <Trash2 className="size-3 text-expense" />
-                    </Button>
+                    <div className="flex shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 sm:hidden"
+                        aria-label="Edit"
+                        onClick={() => {
+                          setEditing(b);
+                          setOpen(true);
+                        }}
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 sm:hidden"
+                        aria-label="Hapus"
+                        onClick={() => setDeleteConfirm(b)}
+                      >
+                        <Trash2 className="size-3.5 text-expense" />
+                      </Button>
+                    </div>
                   </div>
                 ) : null}
               </Card>
