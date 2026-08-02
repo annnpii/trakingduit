@@ -25,6 +25,7 @@ export default function WalletsPage() {
   const toast = useToast();
   const [editing, setEditing] = React.useState<Wallet | null>(null);
   const [open, setOpen] = React.useState(false);
+  const [deleteConfirm, setDeleteConfirm] = React.useState<Wallet | null>(null);
 
   const wallets = useLiveQuery(() => db().wallets.filter((w) => !w.deleted).sortBy("order"), [], []);
   const balances = useLiveQuery(
@@ -71,7 +72,7 @@ export default function WalletsPage() {
             setOpen(true);
           }}
         >
-          <Plus className="size-4" /> Tambah Akun Baru
+          <Plus className="size-4" /> Tambah Dompet
         </Button>
       </div>
 
@@ -94,17 +95,7 @@ export default function WalletsPage() {
                 setOpen(true);
               }}
               onArchive={() => toggleArchive(w)}
-              onDelete={async () => {
-                if (window.confirm("Yakin ingin menghapus dompet ini?")) {
-                  const res = await deleteWallet(w.id);
-                  toast(
-                    res.archived
-                      ? `Dompet punya ${res.txCount} transaksi - diarsipkan, bukan dihapus`
-                      : "Dompet dihapus",
-                    "success",
-                  );
-                }
-              }}
+              onDelete={() => setDeleteConfirm(w)}
             />
           ))}
         </div>
@@ -144,17 +135,7 @@ export default function WalletsPage() {
                   setOpen(true);
                 }}
                 onArchive={() => toggleArchive(w)}
-                onDelete={async () => {
-                  if (window.confirm("Yakin ingin menghapus dompet ini?")) {
-                    const res = await deleteWallet(w.id);
-                    toast(
-                      res.archived
-                        ? `Dompet punya ${res.txCount} transaksi - diarsipkan, bukan dihapus`
-                        : "Dompet dihapus",
-                      "success",
-                    );
-                  }
-                }}
+                onDelete={() => setDeleteConfirm(w)}
               />
             ))}
           </div>
@@ -170,6 +151,47 @@ export default function WalletsPage() {
           setEditing(null);
         }}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Sheet
+        open={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title="Hapus Dompet"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            Yakin ingin menghapus dompet <strong>{deleteConfirm?.name}</strong>?
+          </p>
+          <p className="text-xs text-muted">
+            {(txCounts[deleteConfirm?.id ?? ""] ?? 0) > 0
+              ? "Dompet ini punya transaksi, jadi akan diarsipkan (bukan dihapus permanen)."
+              : "Dompet ini akan dihapus permanen."}
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="lg" className="flex-1" onClick={() => setDeleteConfirm(null)}>
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              size="lg"
+              className="flex-1"
+              onClick={async () => {
+                if (!deleteConfirm) return;
+                const res = await deleteWallet(deleteConfirm.id);
+                toast(
+                  res.archived
+                    ? `Dompet punya ${res.txCount} transaksi - diarsipkan, bukan dihapus`
+                    : "Dompet dihapus",
+                  "success",
+                );
+                setDeleteConfirm(null);
+              }}
+            >
+              Hapus
+            </Button>
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 }

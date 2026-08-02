@@ -76,7 +76,7 @@ export async function walletBalance(walletId: ID): Promise<number> {
 export async function allWalletBalances(): Promise<Record<ID, number>> {
   const d = db();
   const [wallets, txs] = await Promise.all([
-    d.wallets.filter((w) => !w.deleted).toArray(),
+    d.wallets.filter((w) => !w.deleted && !w.archived).toArray(),
     d.transactions.filter((t) => !t.deleted).toArray(),
   ]);
   const map: Record<ID, number> = {};
