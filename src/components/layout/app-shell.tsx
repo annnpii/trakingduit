@@ -102,6 +102,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="relative flex min-h-dvh overflow-x-hidden">
       {/* Parallax Background Layer */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        {/* Layered grid dots pattern moving slower */}
+        <motion.div
+          style={{ y: useTransform(scrollY, [0, 1000], [0, shouldReduceMotion ? 0 : 40]) }}
+          className="absolute inset-0 bg-grid-pattern opacity-70"
+        />
         <motion.div 
           style={{ y: yBg1 }}
           className="absolute -top-[10%] -left-[10%] h-[400px] w-[400px] rounded-full bg-brand/5 blur-[100px] dark:bg-brand/3 sm:h-[600px] sm:w-[600px] sm:blur-[120px]"
