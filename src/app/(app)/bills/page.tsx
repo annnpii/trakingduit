@@ -16,6 +16,7 @@ import {
   Field,
   Input,
   Select,
+  SegmentedControl,
   Sheet,
   useToast,
 } from "@/components/ui";
@@ -35,6 +36,7 @@ export default function BillsPage() {
   const [salaryOpen, setSalaryOpen] = React.useState(false);
   const [hideBalance, setHideBalance] = React.useState(false);
   const [deleteConfirm, setDeleteConfirm] = React.useState<Bill | null>(null);
+  const [filterType, setFilterType] = React.useState<"all" | "regular" | "installment">("all");
 
   React.useEffect(() => {
     const val = localStorage.getItem("td.hideBalance") === "1";
@@ -77,6 +79,24 @@ export default function BillsPage() {
   const totalActiveBills = active.reduce((a, b) => a + b.amount, 0);
   const remainingSalary = (salary?.amount ?? 0) - totalActiveBills;
   const salaryPercent = salary?.amount ? (totalActiveBills / salary.amount) * 100 : 0;
+
+  const totalInstallmentDebt = active
+    .filter((b) => b.is_installment)
+    .reduce((acc, b) => {
+      const remainingPayments = Math.max(0, (b.installment_total ?? 1) - (b.installment_paid ?? 0));
+      const amountPerPeriod = b.installment_amount_per_period ?? b.amount;
+      return acc + (remainingPayments * amountPerPeriod);
+    }, 0);
+
+  const monthlyInstallment = active
+    .filter((b) => b.is_installment)
+    .reduce((acc, b) => acc + b.amount, 0);
+
+  const filteredBills = bills.filter((b) => {
+    if (filterType === "regular") return !b.is_installment;
+    if (filterType === "installment") return b.is_installment;
+    return true;
+  });
 
   return (
     <div className="space-y-4">
@@ -127,6 +147,21 @@ export default function BillsPage() {
         </Card>
       )}
 
+      {totalInstallmentDebt > 0 && (
+        <Card className="border-brand/20 bg-brand/5 p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <h4 className="text-sm font-semibold text-brand">Ringkasan Sisa Cicilan</h4>
+            <p className="text-xs text-muted mt-0.5">
+              Kamu punya <span className="font-semibold text-fg">{active.filter(b => b.is_installment).length} cicilan aktif</span> dengan total sisa utang sebesar <span className="font-semibold text-expense">{formatIDR(totalInstallmentDebt)}</span>.
+            </p>
+          </div>
+          <div className="flex flex-col text-right sm:items-end">
+            <span className="text-[10px] text-muted">Beban Cicilan Bulan Ini</span>
+            <span className="text-sm font-bold text-fg">{formatIDR(monthlyInstallment)}</span>
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full sm:flex sm:w-auto sm:justify-end">
         <Button 
           variant="outline" 
@@ -158,10 +193,25 @@ export default function BillsPage() {
       </div>
 
       {bills.length ? (
-        <div className="grid grid-cols-2 gap-2 sm:gap-3">
-          {bills.map((b) => {
-            const days = daysBetween(today, b.due_date);
-            const late = days < 0 && !b.archived;
+        <div className="space-y-4">
+          <div className="flex justify-start">
+            <SegmentedControl
+              className="w-full sm:w-auto"
+              value={filterType}
+              onChange={setFilterType}
+              options={[
+                { value: "all", label: `Semua (${active.length})` },
+                { value: "regular", label: `Tagihan Biasa (${active.filter(b => !b.is_installment).length})` },
+                { value: "installment", label: `Cicilan (${active.filter(b => b.is_installment).length})` },
+              ]}
+            />
+          </div>
+
+          {filteredBills.length ? (
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              {filteredBills.map((b) => {
+                const days = daysBetween(today, b.due_date);
+                const late = days < 0 && !b.archived;
             
             // Installment calculations
             const remainingPayments = b.is_installment 
@@ -296,6 +346,12 @@ export default function BillsPage() {
               </Card>
             );
           })}
+            </div>
+          ) : (
+            <Card className="p-8 text-center text-muted">
+              Tidak ada data yang cocok dengan filter.
+            </Card>
+          )}
         </div>
       ) : (
         <Card>
@@ -463,26 +519,17 @@ function BillSheet({
           />
         </Field>
 
-        <div className="flex gap-4">
-          <label className="flex flex-1 items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
-            <input
-              type="checkbox"
-              checked={!isInstallment}
-              onChange={() => setIsInstallment(false)}
-              className="size-4 accent-[var(--brand)]"
-            />
-            <span className="text-xs font-semibold">Tipe Tagihan Biasa</span>
-          </label>
-          <label className="flex flex-1 items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
-            <input
-              type="checkbox"
-              checked={isInstallment}
-              onChange={() => setIsInstallment(true)}
-              className="size-4 accent-[var(--brand)]"
-            />
-            <span className="text-xs font-semibold">Tipe Cicilan</span>
-          </label>
-        </div>
+        <Field label="Tipe Tagihan">
+          <SegmentedControl
+            className="w-full"
+            value={isInstallment ? "installment" : "regular"}
+            onChange={(v) => setIsInstallment(v === "installment")}
+            options={[
+              { value: "regular", label: "Tagihan Biasa" },
+              { value: "installment", label: "Cicilan" },
+            ]}
+          />
+        </Field>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label={isInstallment ? "Nominal per bulan" : "Nominal"}>

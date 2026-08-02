@@ -138,6 +138,10 @@ create table if not exists bills (
   last_paid_at timestamptz,
   auto_create_tx smallint not null default 1,
   archived smallint not null default 0,
+  is_installment smallint not null default 0,
+  installment_total integer,
+  installment_paid integer,
+  installment_amount_per_period numeric(16, 2),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   deleted smallint not null default 0
