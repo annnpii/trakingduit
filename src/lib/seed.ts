@@ -34,7 +34,7 @@ export const DEFAULT_CATEGORIES: CategorySeed[] = [
   },
   {
     id: "ca7e1000-e1ec-4000-8000-000000000004",
-    name: "Tagihan & Utilitas",
+    name: "Tagihan",
     type: "expense",
     icon: "receipt",
     color: "#0ea5e9",

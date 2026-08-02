@@ -330,13 +330,14 @@ export function TransactionSheet({
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Tanggal">
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="text-xs sm:text-sm" />
           </Field>
           <Field label="Merchant / Sumber">
             <Input
               value={merchant}
               onChange={(e) => setMerchant(e.target.value)}
               placeholder="cth. Indomaret"
+              className="placeholder:text-xs"
             />
           </Field>
         </div>
