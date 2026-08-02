@@ -126,14 +126,14 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4">
       {/* Greeting + month switcher - more compact */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-base sm:text-lg font-semibold tracking-tight leading-tight">
+      <div className="flex items-center justify-between gap-3 w-full">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm sm:text-lg font-semibold tracking-tight leading-tight truncate">
             Hai, {displayName} 👋
           </p>
-          <p className="mt-0.5 text-[11px] sm:text-xs text-muted">Gimana duit lo hari ini?</p>
+          <p className="mt-0.5 text-[10px] sm:text-xs text-muted truncate">Gimana duit lo hari ini?</p>
         </div>
-        <div className="flex items-center justify-start sm:justify-end w-full sm:w-auto shrink-0">
+        <div className="shrink-0">
           <MonthSwitcher value={month} onChange={setMonth} />
         </div>
       </div>
