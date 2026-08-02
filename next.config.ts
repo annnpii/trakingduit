@@ -4,6 +4,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // A stray lockfile in the parent directory makes Turbopack guess the wrong root.
   turbopack: { root: path.resolve(import.meta.dirname) },
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
   async headers() {
     return [
       {

@@ -11,7 +11,6 @@ const SHELL_ASSETS = [
   "/scan",
   "/analytics",
   "/manifest.webmanifest",
-  "/icons/icon.svg",
   "/icons/icon-192.png",
 ];
 

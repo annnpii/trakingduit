@@ -29,9 +29,15 @@ import { useSession } from "@/lib/session";
 import { useTheme } from "@/lib/theme";
 import { db } from "@/lib/db";
 import { runBillReminderScan } from "@/lib/repo";
+import dynamic from "next/dynamic";
 import { Button, Spinner } from "@/components/ui";
-import { TransactionSheet } from "@/components/transactions/transaction-sheet";
-import { LockScreen } from "@/components/layout/lock-screen";
+
+// Lazy-load: hanya dimuat saat benar-benar dibutuhkan (sheet dibuka / layar terkunci).
+const TransactionSheet = dynamic(
+  () => import("@/components/transactions/transaction-sheet").then((m) => m.TransactionSheet),
+  { ssr: false },
+);
+const LockScreen = dynamic(() => import("@/components/layout/lock-screen").then((m) => m.LockScreen));
 
 const PRIMARY_NAV = [
   { href: "/dashboard", label: "Beranda", icon: LayoutGrid },
