@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { PiggyBank } from "lucide-react";
+import Image from "next/image";
 import { useSession } from "@/lib/session";
 import { Button, Field, Input, SegmentedControl, Spinner } from "@/components/ui";
 
@@ -70,8 +70,15 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         {/* Logo + greeting */}
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="grid size-14 place-items-center rounded-2xl bg-white/15 text-white backdrop-blur-sm">
-            <PiggyBank className="size-7" />
+          <span className="grid size-16 place-items-center overflow-hidden rounded-2xl bg-white/15 shadow-lg backdrop-blur-sm ring-1 ring-white/20">
+            <Image
+              src="/icons/trakingduit.png"
+              alt="TrakingDuit"
+              width={1536}
+              height={1024}
+              priority
+              className="size-full object-cover"
+            />
           </span>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">TrakingDuit</h1>
           <p className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">

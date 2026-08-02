@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
@@ -13,7 +14,6 @@ import {
   ListOrdered,
   LockKeyhole,
   Moon,
-  PiggyBank,
   Plus,
   ScanLine,
   Settings,
@@ -143,8 +143,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
 function BrandMark() {
   return (
-    <span className="grid size-9 place-items-center rounded-xl bg-brand text-brand-fg">
-      <PiggyBank className="size-5" />
+    <span className="grid size-9 place-items-center overflow-hidden rounded-xl bg-brand">
+      <Image
+        src="/icons/trakingduit.png"
+        alt="TrakingDuit"
+        width={1536}
+        height={1024}
+        className="size-full object-cover"
+      />
     </span>
   );
 }

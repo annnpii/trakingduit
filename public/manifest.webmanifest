@@ -13,9 +13,9 @@
   "categories": ["finance", "productivity", "utilities"],
   "icons": [
     {
-      "src": "/icons/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/icons/trakingduit.png",
+      "sizes": "1536x1024",
+      "type": "image/png",
       "purpose": "any"
     },
     {
