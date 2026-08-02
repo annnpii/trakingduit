@@ -1,0 +1,440 @@
+# Setup TrakingDuit di Proxmox Server
+# Panduan lengkap untuk deploy aplikasi finance TrakingDuit
+# Tanggal: 2 Agustus 2026
+
+# ============================================================================
+# ENVIRONMENT INFO
+# ============================================================================
+# OS: Ubuntu 22.04+ / Debian 11+ (recommended)
+# RAM: Minimal 2GB (4GB recommended untuk build)
+# Storage: Minimal 2GB free space
+# Port: 3000 (development) atau 80/443 (production)
+
+# ============================================================================
+# 1. INSTALASI DEPENDENCIES
+# ============================================================================
+
+# Update system packages
+sudo apt update && sudo apt upgrade -y
+
+# Install Node.js 20.x LTS (via NodeSource)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Verify Node.js version (harus 20.x+)
+node --version
+npm --version
+
+# Install pnpm globally
+sudo npm install -g pnpm
+
+# Install Git (kalau belum ada)
+sudo apt install -y git
+
+# Install PM2 untuk process manager (production)
+sudo npm install -g pm2
+
+# (Optional) Install Nginx untuk reverse proxy
+sudo apt install -y nginx
+
+# (Optional) Install Certbot untuk SSL/HTTPS
+sudo apt install -y certbot python3-certbot-nginx
+
+
+# ============================================================================
+# 2. CLONE PROJECT
+# ============================================================================
+
+# Buat user khusus untuk aplikasi (recommended, optional)
+sudo useradd -m -s /bin/bash trakingduit
+sudo passwd trakingduit
+
+# Switch ke user baru (atau pakai user biasa)
+sudo su - trakingduit
+
+# Clone repository
+cd ~
+git clone https://github.com/annnpii/trakingduit.git
+cd trakingduit
+
+# Verify files
+ls -la
+
+
+# ============================================================================
+# 3. SETUP ENVIRONMENT VARIABLES
+# ============================================================================
+
+# Copy example env
+cp .env.example .env.local
+
+# Edit environment variables
+nano .env.local
+
+# Isi sesuai kebutuhan:
+# ----------------------------------------------------------------
+# PRODUCTION MODE (Supabase Cloud)
+# ----------------------------------------------------------------
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+
+# ----------------------------------------------------------------
+# Google Sheets Sync (Optional)
+# ----------------------------------------------------------------
+GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service@project.iam.gserviceaccount.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----\n"
+GOOGLE_SHEET_ID=your_spreadsheet_id
+GOOGLE_SHEET_TAB=Transactions
+
+# ----------------------------------------------------------------
+# OCR & AI Features (Optional)
+# ----------------------------------------------------------------
+GOOGLE_VISION_API_KEY=your_google_vision_api_key
+ANTHROPIC_API_KEY=sk-ant-your_anthropic_key_here
+ANTHROPIC_MODEL=claude-opus-5
+
+# ----------------------------------------------------------------
+# OFFLINE MODE (Tanpa Cloud)
+# ----------------------------------------------------------------
+# Kosongkan semua variabel di atas, aplikasi tetap jalan
+# Data tersimpan di browser (IndexedDB) client-side only
+
+
+# Save file: Ctrl+O, Enter, Ctrl+X
+
+
+# ============================================================================
+# 4. INSTALL DEPENDENCIES & BUILD
+# ============================================================================
+
+# Install project dependencies
+pnpm install
+
+# Build production bundle
+pnpm build
+
+# Test production build
+pnpm start
+
+# Buka browser: http://your-server-ip:3000
+# Kalau sukses, stop dengan Ctrl+C
+
+
+# ============================================================================
+# 5. PRODUCTION SETUP dengan PM2
+# ============================================================================
+
+# Start aplikasi dengan PM2
+pm2 start npm --name "trakingduit" -- start
+
+# Set PM2 startup on boot
+pm2 startup
+# Copy-paste command yang muncul, lalu jalankan
+
+# Save PM2 process list
+pm2 save
+
+# Monitor aplikasi
+pm2 status
+pm2 logs trakingduit
+pm2 monit
+
+# Useful PM2 commands:
+# pm2 restart trakingduit    # Restart app
+# pm2 stop trakingduit       # Stop app
+# pm2 delete trakingduit     # Remove from PM2
+# pm2 logs trakingduit --lines 100  # Show last 100 lines
+
+
+# ============================================================================
+# 6. NGINX REVERSE PROXY (Optional, Recommended)
+# ============================================================================
+
+# Buat Nginx config
+sudo nano /etc/nginx/sites-available/trakingduit
+
+# Isi config (tanpa SSL dulu):
+# ----------------------------------------------------------------
+server {
+    listen 80;
+    server_name trakingduit.yourdomain.com;  # Ganti dengan domain lu
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        
+        # Timeout settings
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # Static files caching
+    location /_next/static {
+        proxy_pass http://localhost:3000;
+        proxy_cache_valid 200 365d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+}
+# ----------------------------------------------------------------
+
+# Enable site
+sudo ln -s /etc/nginx/sites-available/trakingduit /etc/nginx/sites-enabled/
+
+# Test Nginx config
+sudo nginx -t
+
+# Restart Nginx
+sudo systemctl restart nginx
+
+# Test: http://your-server-ip atau http://yourdomain.com
+
+
+# ============================================================================
+# 7. SSL/HTTPS dengan Let's Encrypt (Optional, Recommended)
+# ============================================================================
+
+# Install SSL certificate
+sudo certbot --nginx -d trakingduit.yourdomain.com
+
+# Follow prompts:
+# - Enter email
+# - Agree to terms
+# - Choose redirect HTTP to HTTPS (recommended)
+
+# Auto-renewal test
+sudo certbot renew --dry-run
+
+# Certbot auto-renew sudah aktif via systemd timer
+sudo systemctl status certbot.timer
+
+
+# ============================================================================
+# 8. FIREWALL SETUP (UFW)
+# ============================================================================
+
+# Enable firewall
+sudo ufw enable
+
+# Allow SSH (IMPORTANT! Jangan lupa ini)
+sudo ufw allow 22/tcp
+
+# Allow HTTP & HTTPS
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+
+# (Optional) Allow direct access ke port 3000 untuk testing
+sudo ufw allow 3000/tcp
+
+# Check firewall status
+sudo ufw status verbose
+
+
+# ============================================================================
+# 9. PROXMOX SPECIFIC SETUP (Optional)
+# ============================================================================
+
+# Kalau pakai LXC Container di Proxmox:
+# -----------------------------------------
+# 1. Buat LXC container baru:
+#    - Template: Ubuntu 22.04 atau Debian 11
+#    - RAM: 2GB minimum (4GB recommended)
+#    - Storage: 8GB minimum
+#    - Network: Bridge ke interface utama
+#    - Start on boot: Enable
+
+# 2. Di Proxmox host, forward port (kalau perlu):
+#    Edit /etc/pve/firewall/cluster.fw
+#    Atau pakai iptables:
+sudo iptables -t nat -A PREROUTING -i vmbr0 -p tcp --dport 80 -j DNAT --to 192.168.1.100:80
+sudo iptables -t nat -A PREROUTING -i vmbr0 -p tcp --dport 443 -j DNAT --to 192.168.1.100:443
+
+# 3. Backup container secara reguler:
+#    Proxmox Web UI → Backup → Schedule
+
+
+# ============================================================================
+# 10. MAINTENANCE & MONITORING
+# ============================================================================
+
+# Update aplikasi (pull latest changes)
+cd ~/trakingduit
+git pull origin main
+pnpm install
+pnpm build
+pm2 restart trakingduit
+
+# Check logs
+pm2 logs trakingduit --lines 100
+
+# Monitor resource usage
+pm2 monit
+htop
+
+# Disk usage
+df -h
+du -sh ~/trakingduit
+
+# Check Nginx logs
+sudo tail -f /var/log/nginx/access.log
+sudo tail -f /var/log/nginx/error.log
+
+# Database backup (jika pakai Supabase self-hosted)
+# Supabase cloud sudah auto-backup
+
+# Restart services
+pm2 restart trakingduit
+sudo systemctl restart nginx
+
+
+# ============================================================================
+# 11. SECURITY CHECKLIST
+# ============================================================================
+
+# ✅ Firewall aktif (UFW)
+# ✅ SSL/HTTPS enabled
+# ✅ Non-root user untuk aplikasi
+# ✅ Environment variables tidak ter-commit ke git
+# ✅ Nginx security headers configured
+# ✅ Rate limiting di middleware (sudah built-in)
+# ✅ Regular system updates
+sudo apt update && sudo apt upgrade -y
+
+# ✅ Disable root SSH login (optional)
+sudo nano /etc/ssh/sshd_config
+# Set: PermitRootLogin no
+sudo systemctl restart sshd
+
+# ✅ Fail2ban untuk brute force protection
+sudo apt install -y fail2ban
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+
+
+# ============================================================================
+# 12. TROUBLESHOOTING
+# ============================================================================
+
+# Error: Module not found
+pnpm install
+pnpm build
+
+# Error: Port 3000 already in use
+sudo lsof -i :3000
+sudo kill -9 <PID>
+
+# Error: Permission denied
+sudo chown -R trakingduit:trakingduit ~/trakingduit
+
+# Error: Build fails (out of memory)
+export NODE_OPTIONS="--max-old-space-size=4096"
+pnpm build
+
+# Check PM2 process
+pm2 status
+pm2 describe trakingduit
+
+# Restart semua services
+pm2 restart trakingduit
+sudo systemctl restart nginx
+
+# Check system resources
+free -h
+df -h
+htop
+
+
+# ============================================================================
+# 13. QUICK DEPLOYMENT SCRIPT (Copy-Paste)
+# ============================================================================
+
+# Full automated setup (Ubuntu/Debian):
+#!/bin/bash
+set -e
+
+echo "🚀 Installing dependencies..."
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs nginx git
+sudo npm install -g pnpm pm2
+
+echo "📦 Cloning repository..."
+cd ~
+git clone https://github.com/annnpii/trakingduit.git
+cd trakingduit
+
+echo "⚙️ Setting up environment..."
+cp .env.example .env.local
+echo "Edit .env.local with your credentials:"
+echo "nano .env.local"
+read -p "Press Enter after editing .env.local..."
+
+echo "🔨 Building application..."
+pnpm install
+pnpm build
+
+echo "🚀 Starting with PM2..."
+pm2 start npm --name "trakingduit" -- start
+pm2 startup
+pm2 save
+
+echo "✅ Setup complete!"
+echo "Application running at: http://localhost:3000"
+echo "Configure Nginx reverse proxy for production access."
+
+
+# ============================================================================
+# 14. PRODUCTION CHECKLIST
+# ============================================================================
+
+# Sebelum go-live:
+# ✅ Environment variables di .env.local sudah benar
+# ✅ Build production sukses (pnpm build)
+# ✅ PM2 startup configured
+# ✅ Nginx reverse proxy configured
+# ✅ SSL/HTTPS enabled
+# ✅ Firewall configured (UFW)
+# ✅ Domain DNS pointing ke server IP
+# ✅ Backup strategy configured
+# ✅ Monitoring setup (PM2, logs)
+# ✅ Test semua fitur (login, transactions, sync)
+
+
+# ============================================================================
+# USEFUL LINKS
+# ============================================================================
+
+# Project GitHub: https://github.com/annnpii/trakingduit
+# Live Demo: https://trakingduit.vercel.app
+# Security Audit: docs/SECURITY_AUDIT_REPORT.md
+# Documentation: README.md
+
+# Supabase Dashboard: https://app.supabase.com
+# PM2 Documentation: https://pm2.keymetrics.io/docs/usage/quick-start/
+# Nginx Documentation: https://nginx.org/en/docs/
+
+
+# ============================================================================
+# SUPPORT
+# ============================================================================
+
+# Issues/Bug Reports: https://github.com/annnpii/trakingduit/issues
+# Email: [your-email]
+
+# Selamat deploy! 🎉
