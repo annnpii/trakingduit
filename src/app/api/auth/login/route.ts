@@ -47,7 +47,17 @@ export async function POST(request: Request) {
       ? await sb.auth.signInWithPassword({ email, password })
       : await sb.auth.signUp({ email, password });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 401 });
+  if (error) {
+    // Friendly error message untuk invalid credentials
+    const friendlyMessage = error.message.toLowerCase().includes('invalid') || 
+                           error.message.toLowerCase().includes('credentials') ||
+                           error.message.toLowerCase().includes('password') ||
+                           error.message.toLowerCase().includes('email')
+      ? "Username atau password salah, coba lagi ya"
+      : error.message;
+    
+    return NextResponse.json({ error: friendlyMessage }, { status: 401 });
+  }
 
   return NextResponse.json({
     user: data.user ? { id: data.user.id, email: data.user.email } : null,

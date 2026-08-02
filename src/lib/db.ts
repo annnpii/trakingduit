@@ -172,7 +172,9 @@ export function db(): TrackingDuitDB {
 /** Insert default categories + one cash wallet on first run. */
 export async function seedIfEmpty(): Promise<void> {
   const d = db();
-  const catCount = await d.categories.count();
+  
+  // Check for active (non-deleted) categories
+  const catCount = await d.categories.where("deleted").equals(0).count();
   if (catCount === 0) {
     // Use bulkPut to prevent duplicate IDs
     await d.categories.bulkPut(
@@ -186,7 +188,9 @@ export async function seedIfEmpty(): Promise<void> {
       })),
     );
   }
-  const walletCount = await d.wallets.count();
+  
+  // Check for active (non-deleted) wallets
+  const walletCount = await d.wallets.where("deleted").equals(0).count();
   if (walletCount === 0) {
     // Use bulkPut to prevent duplicate IDs
     await d.wallets.bulkPut(
