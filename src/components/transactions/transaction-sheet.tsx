@@ -291,9 +291,8 @@ export function TransactionSheet({
                     key={c.id}
                     variants={getAnimation(staggerItem)}
                     onClick={() => setCategoryId(active ? "" : c.id)}
-                    whileHover={{ scale: 1.04 }}
-                    whileTap={{ scale: 0.94 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                    whileTap={{ scale: 0.96 }}
+                    transition={{ duration: 0.1 }}
                     className={cn(
                       "flex flex-col items-center gap-1 rounded-xl border px-1.5 py-2 text-[10px] leading-tight transition",
                       active
@@ -301,14 +300,12 @@ export function TransactionSheet({
                         : "border-border bg-surface-2 text-muted hover:text-fg",
                     )}
                   >
-                    <motion.span
+                    <span
                       className="grid size-7 place-items-center rounded-lg"
                       style={{ background: `${c.color}22`, color: c.color }}
-                      animate={active ? { scale: [1, 1.15, 1] } : { scale: 1 }}
-                      transition={{ duration: 0.3 }}
                     >
                       <DynIcon name={c.icon} className="size-3.5" />
-                    </motion.span>
+                    </span>
                     <span className="line-clamp-2 text-center">{c.name}</span>
                   </motion.button>
                 );

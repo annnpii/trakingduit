@@ -11,33 +11,33 @@ import { Variants, Transition } from "framer-motion";
 
 export const spring: Transition = {
   type: "spring",
-  stiffness: 400,
-  damping: 30,
+  stiffness: 600,
+  damping: 35,
 };
 
 export const smoothSpring: Transition = {
   type: "spring",
-  stiffness: 300,
-  damping: 25,
+  stiffness: 500,
+  damping: 30,
 };
 
 export const snappySpring: Transition = {
   type: "spring",
-  stiffness: 500,
-  damping: 35,
-  mass: 0.8,
+  stiffness: 700,
+  damping: 40,
+  mass: 0.5,
 };
 
 export const easeOut: Transition = {
   type: "tween",
   ease: "easeOut",
-  duration: 0.3,
+  duration: 0.15,
 };
 
 export const easeInOut: Transition = {
   type: "tween",
   ease: [0.4, 0, 0.2, 1],
-  duration: 0.4,
+  duration: 0.2,
 };
 
 // ============================================
@@ -107,38 +107,38 @@ export const staggerContainer: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.05,
+      staggerChildren: 0.02,
+      delayChildren: 0,
     },
   },
   exit: {
     opacity: 0,
     transition: {
-      staggerChildren: 0.02,
+      staggerChildren: 0.01,
       staggerDirection: -1,
     },
   },
 };
 
 export const staggerItem: Variants = {
-  hidden: { opacity: 0, y: 10 },
+  hidden: { opacity: 0, y: 4 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: smoothSpring,
+    transition: { duration: 0.15, ease: "easeOut" },
   },
   exit: {
     opacity: 0,
-    y: -5,
-    transition: { duration: 0.2 },
+    y: -4,
+    transition: { duration: 0.1 },
   },
 };
 
 // Sheet/Modal animations
 export const sheetOverlay: Variants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.2 } },
-  exit: { opacity: 0, transition: { duration: 0.2 } },
+  visible: { opacity: 1, transition: { duration: 0.15 } },
+  exit: { opacity: 0, transition: { duration: 0.15 } },
 };
 
 export const sheetContent: Variants = {
@@ -147,9 +147,9 @@ export const sheetContent: Variants = {
     y: 0,
     transition: {
       type: "spring",
-      stiffness: 450,
-      damping: 32,
-      mass: 0.9,
+      stiffness: 600,
+      damping: 40,
+      mass: 0.6,
     },
   },
   exit: {
@@ -157,7 +157,7 @@ export const sheetContent: Variants = {
     transition: {
       type: "tween",
       ease: [0.4, 0, 1, 1],
-      duration: 0.25,
+      duration: 0.2,
     },
   },
 };

@@ -74,8 +74,8 @@ export default function LoginPage() {
             <Image
               src="/icons/logo.png"
               alt="TrakingDuit"
-              width={1254}
-              height={1254}
+              width={512}
+              height={512}
               priority
               className="size-full object-cover"
             />

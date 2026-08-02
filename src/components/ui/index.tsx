@@ -85,9 +85,9 @@ export function Button({
         className,
       )}
       disabled={isDisabled}
-      whileHover={getAnimation({ scale: 1.02 })}
-      whileTap={getAnimation({ scale: 0.96 })}
-      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      whileHover={!isDisabled ? getAnimation({ scale: 1.01 }) : undefined}
+      whileTap={!isDisabled ? getAnimation({ scale: 0.98 }) : undefined}
+      transition={{ duration: 0.1 }}
       {...props}
     >
       <AnimatePresence mode="popLayout" initial={false}>
@@ -309,48 +309,18 @@ export function EmptyState({
   return (
     <motion.div
       className={cn("flex flex-col items-center px-6 py-12 text-center", className)}
-      initial={getAnimation({ opacity: 0, y: 16 })}
+      initial={getAnimation({ opacity: 0, y: 8 })}
       animate={getAnimation({ opacity: 1, y: 0 })}
-      transition={{ type: "spring", stiffness: 300, damping: 25 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
     >
       {Icon ? (
-        <motion.div
-          className="mb-3 rounded-2xl border border-border bg-surface-2 p-3 text-muted"
-          initial={{ scale: 0.6, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.1 }}
-        >
+        <div className="mb-3 rounded-2xl border border-border bg-surface-2 p-3 text-muted">
           <Icon className="size-6" />
-        </motion.div>
+        </div>
       ) : null}
-      <motion.p
-        className="text-sm font-medium"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-      >
-        {title}
-      </motion.p>
-      {description ? (
-        <motion.p
-          className="mt-1 max-w-xs text-xs text-muted"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          {description}
-        </motion.p>
-      ) : null}
-      {action ? (
-        <motion.div
-          className="mt-4"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-        >
-          {action}
-        </motion.div>
-      ) : null}
+      <p className="text-sm font-medium">{title}</p>
+      {description ? <p className="mt-1 max-w-xs text-xs text-muted">{description}</p> : null}
+      {action ? <div className="mt-4">{action}</div> : null}
     </motion.div>
   );
 }
@@ -509,16 +479,10 @@ export function BalanceCard({
         "relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#003d7a,#0072c6)] p-5 text-white shadow-lg shadow-brand/30",
         className,
       )}
-      initial={getAnimation({ opacity: 0, y: 16, scale: 0.98 })}
-      animate={getAnimation({ opacity: 1, y: 0, scale: 1 })}
-      transition={{ type: "spring", stiffness: 300, damping: 25 }}
+      initial={getAnimation({ opacity: 0, y: 8 })}
+      animate={getAnimation({ opacity: 1, y: 0 })}
+      transition={{ duration: 0.2, ease: "easeOut" }}
     >
-      <motion.div
-        className="pointer-events-none absolute -top-16 -right-12 size-48 rounded-full opacity-20 blur-3xl"
-        style={{ background: "#7cc4ff" }}
-        animate={{ x: [0, -12, 0], y: [0, 8, 0] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-      />
       <div className="relative">
         <div className="flex items-center gap-2 text-[13px] font-medium text-white/85">
           {label}
@@ -528,17 +492,16 @@ export function BalanceCard({
               onClick={onToggleHide}
               aria-label={hidden ? "Liat nominal" : "Sembunyiin nominal"}
               className="text-white/80 transition hover:text-white"
-              whileTap={{ scale: 0.85 }}
-              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
             >
               <AnimatePresence mode="wait" initial={false}>
                 <motion.span
                   key={hidden ? "off" : "on"}
                   className="inline-flex"
-                  initial={{ opacity: 0, rotate: -90, scale: 0.5 }}
-                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                  exit={{ opacity: 0, rotate: 90, scale: 0.5 }}
-                  transition={{ duration: 0.15 }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.1 }}
                 >
                   {hidden ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </motion.span>
@@ -640,17 +603,13 @@ export function MenuTile({
         "flex cursor-pointer flex-col items-center gap-2 rounded-2xl bg-surface p-3 shadow-(--shadow-card) transition",
         className,
       )}
-      whileHover={{ y: -3, scale: 1.03 }}
-      whileTap={{ scale: 0.94 }}
-      transition={{ type: "spring", stiffness: 400, damping: 20 }}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ duration: 0.1 }}
     >
-      <motion.span
-        className={cn("grid size-11 place-items-center rounded-2xl", tones[tone])}
-        whileHover={{ scale: 1.08, rotate: 3 }}
-        transition={{ type: "spring", stiffness: 500, damping: 20 }}
-      >
+      <span className={cn("grid size-11 place-items-center rounded-2xl", tones[tone])}>
         <Icon className="size-5" />
-      </motion.span>
+      </span>
       <span className="text-[11px] font-medium text-fg">{label}</span>
     </motion.div>
   );

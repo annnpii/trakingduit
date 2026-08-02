@@ -19,14 +19,25 @@ import { downloadFile, formatIDR, monthRange, pct, toMonthKey } from "@/lib/util
 import { toCSV } from "@/lib/export";
 import { Button, Card, CardHeader, EmptyState, SegmentedControl } from "@/components/ui";
 import { StatTile } from "@/components/ui/stat-tile";
-import {
-  CategoryDonut,
-  DailyFlowChart,
-  MonthlyCompareChart,
-  NetTrendChart,
-  WeekdayChart,
-} from "@/components/charts";
+import dynamic from "next/dynamic";
 import { MonthSwitcher, monthLabel } from "@/components/layout/month-switcher";
+
+// Recharts is heavy (~100KB+). Load only when /analytics is opened.
+const CategoryDonut = dynamic(() =>
+  import("@/components/charts").then((m) => m.CategoryDonut),
+);
+const DailyFlowChart = dynamic(() =>
+  import("@/components/charts").then((m) => m.DailyFlowChart),
+);
+const MonthlyCompareChart = dynamic(() =>
+  import("@/components/charts").then((m) => m.MonthlyCompareChart),
+);
+const NetTrendChart = dynamic(() =>
+  import("@/components/charts").then((m) => m.NetTrendChart),
+);
+const WeekdayChart = dynamic(() =>
+  import("@/components/charts").then((m) => m.WeekdayChart),
+);
 
 export default function AnalyticsPage() {
   const [month, setMonth] = React.useState(toMonthKey());

@@ -20,9 +20,8 @@ import {
   useToast,
 } from "@/components/ui";
 import { DynIcon, ICON_NAMES } from "@/components/ui/icon";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { staggerContainer, staggerItem, getAnimation } from "@/lib/animations";
-
 export default function WalletsPage() {
   const toast = useToast();
   const [editing, setEditing] = React.useState<Wallet | null>(null);
@@ -91,22 +90,20 @@ export default function WalletsPage() {
           initial="hidden"
           animate="visible"
         >
-          <AnimatePresence mode="popLayout">
-            {active.map((w) => (
-              <WalletCard
-                key={w.id}
-                wallet={w}
-                balance={balances[w.id] ?? 0}
-                txCount={txCounts[w.id] ?? 0}
-                onEdit={() => {
-                  setEditing(w);
-                  setOpen(true);
-                }}
-                onArchive={() => toggleArchive(w)}
-                onDelete={() => setDeleteConfirm(w)}
-              />
-            ))}
-          </AnimatePresence>
+          {active.map((w) => (
+            <WalletCard
+              key={w.id}
+              wallet={w}
+              balance={balances[w.id] ?? 0}
+              txCount={txCounts[w.id] ?? 0}
+              onEdit={() => {
+                setEditing(w);
+                setOpen(true);
+              }}
+              onArchive={() => toggleArchive(w)}
+              onDelete={() => setDeleteConfirm(w)}
+            />
+          ))}
         </motion.div>
       ) : (
         <Card>
@@ -221,16 +218,11 @@ function WalletCard({
   onDelete: () => void;
 }) {
   return (
-    <motion.div
-      variants={getAnimation(staggerItem)}
-      layout
-      exit={{ opacity: 0, scale: 0.9, y: -8, transition: { duration: 0.2 } }}
-    >
-      <motion.div whileHover={{ y: -4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
-        <Card
-          className={cn("relative overflow-hidden p-4 text-white", wallet.archived && "opacity-60")}
-          style={{ background: `linear-gradient(135deg, ${wallet.color}, ${wallet.color}cc)` }}
-        >
+    <motion.div variants={getAnimation(staggerItem)}>
+      <Card
+        className={cn("relative overflow-hidden p-4 text-white", wallet.archived && "opacity-60")}
+        style={{ background: `linear-gradient(135deg, ${wallet.color}, ${wallet.color}cc)` }}
+      >
       <div className="flex items-start justify-between">
         <span className="grid size-11 place-items-center rounded-full bg-white/15 text-white">
           <DynIcon name={wallet.icon} className="size-5" />
@@ -279,8 +271,7 @@ function WalletCard({
         </span>
         <span className="text-[11px] text-white/80">{txCount} transaksi</span>
       </div>
-        </Card>
-      </motion.div>
+    </Card>
     </motion.div>
   );
 }

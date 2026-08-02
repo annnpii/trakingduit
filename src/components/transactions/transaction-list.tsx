@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowLeftRight, ScanLine } from "lucide-react";
 import type { Category, ID, Transaction, Wallet } from "@/lib/types";
 import { cn, formatDayLabel, formatIDR, groupBy } from "@/lib/utils";
@@ -48,18 +48,16 @@ export function TransactionList({
         initial="hidden"
         animate="visible"
       >
-        <AnimatePresence mode="popLayout">
-          {sorted.map((tx) => (
-            <TransactionRow
-              key={tx.id}
-              tx={tx}
-              category={tx.category_id ? catMap[tx.category_id] : undefined}
-              wallet={walletMap[tx.wallet_id]}
-              toWallet={tx.to_wallet_id ? walletMap[tx.to_wallet_id] : undefined}
-              onSelect={onSelect}
-            />
-          ))}
-        </AnimatePresence>
+        {sorted.map((tx) => (
+          <TransactionRow
+            key={tx.id}
+            tx={tx}
+            category={tx.category_id ? catMap[tx.category_id] : undefined}
+            wallet={walletMap[tx.wallet_id]}
+            toWallet={tx.to_wallet_id ? walletMap[tx.to_wallet_id] : undefined}
+            onSelect={onSelect}
+          />
+        ))}
       </motion.ul>
     );
   }
@@ -69,44 +67,41 @@ export function TransactionList({
 
   return (
     <div className={className}>
-      <AnimatePresence mode="popLayout">
-        {dayKeys.map((day) => {
-          const items = days[day];
-          const net = items.reduce(
-            (acc, t) => acc + (t.type === "income" ? t.amount : t.type === "expense" ? -t.amount : 0),
-            0,
-          );
-          return (
-            <motion.section
-              key={day}
-              variants={getAnimation(staggerContainer)}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <div className="flex items-center justify-between px-4 py-2 text-[11px] text-muted">
-                <span className="font-medium">{formatDayLabel(day)}</span>
-                <span className={cn("num", net > 0 ? "text-income" : net < 0 ? "text-expense" : "")}>
-                  {net > 0 ? "+" : ""}
-                  {formatIDR(net)}
-                </span>
-              </div>
-              <motion.ul className="divide-y divide-border border-y border-border">
-                {items.map((tx) => (
-                  <TransactionRow
-                    key={tx.id}
-                    tx={tx}
-                    category={tx.category_id ? catMap[tx.category_id] : undefined}
-                    wallet={walletMap[tx.wallet_id]}
-                    toWallet={tx.to_wallet_id ? walletMap[tx.to_wallet_id] : undefined}
-                    onSelect={onSelect}
-                  />
-                ))}
-              </motion.ul>
-            </motion.section>
-          );
-        })}
-      </AnimatePresence>
+      {dayKeys.map((day) => {
+        const items = days[day];
+        const net = items.reduce(
+          (acc, t) => acc + (t.type === "income" ? t.amount : t.type === "expense" ? -t.amount : 0),
+          0,
+        );
+        return (
+          <motion.section
+            key={day}
+            variants={getAnimation(staggerContainer)}
+            initial="hidden"
+            animate="visible"
+          >
+            <div className="flex items-center justify-between px-4 py-2 text-[11px] text-muted">
+              <span className="font-medium">{formatDayLabel(day)}</span>
+              <span className={cn("num", net > 0 ? "text-income" : net < 0 ? "text-expense" : "")}>
+                {net > 0 ? "+" : ""}
+                {formatIDR(net)}
+              </span>
+            </div>
+            <motion.ul className="divide-y divide-border border-y border-border">
+              {items.map((tx) => (
+                <TransactionRow
+                  key={tx.id}
+                  tx={tx}
+                  category={tx.category_id ? catMap[tx.category_id] : undefined}
+                  wallet={walletMap[tx.wallet_id]}
+                  toWallet={tx.to_wallet_id ? walletMap[tx.to_wallet_id] : undefined}
+                  onSelect={onSelect}
+                />
+              ))}
+            </motion.ul>
+          </motion.section>
+        );
+      })}
     </div>
   );
 }
@@ -142,8 +137,8 @@ function TransactionRow({
       <motion.button
         onClick={() => onSelect?.(tx)}
         className="flex w-full items-center gap-3 bg-surface px-4 py-3 text-left transition hover:bg-surface-2"
-        whileHover={{ backgroundColor: "var(--color-surface-2)", transition: { duration: 0.15 } }}
-        whileTap={{ scale: 0.98 }}
+        whileTap={{ scale: 0.99 }}
+        transition={{ duration: 0.1 }}
       >
         <span
           className="grid size-10 shrink-0 place-items-center rounded-full"
