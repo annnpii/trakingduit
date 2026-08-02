@@ -127,34 +127,33 @@ export default function BillsPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-3 gap-2 sm:flex sm:justify-end">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full sm:flex sm:w-auto sm:justify-end">
         <Button 
           variant="outline" 
-          className="text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-4"
+          className="text-[11px] sm:text-xs md:text-sm h-9 sm:h-10 px-1 sm:px-4 w-full"
           onClick={() => setSalaryOpen(true)}
         >
           Set Gaji
         </Button>
         <Button
           variant="secondary"
-          className="text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-4"
+          className="text-[11px] sm:text-xs md:text-sm h-9 sm:h-10 px-1 sm:px-4 w-full"
           onClick={async () => {
             const n = await runBillReminderScan();
             toast(n ? `${n} pengingat dibuat` : "Tidak ada pengingat baru", "success");
           }}
         >
-          <BellRing className="size-3.5 sm:size-4" /> 
-          <span className="hidden min-[360px]:inline">Reminder</span>
-          <span className="inline min-[360px]:hidden">Cek</span>
+          <BellRing className="size-3 sm:size-4 shrink-0" /> 
+          <span className="truncate">Reminder</span>
         </Button>
         <Button
-          className="text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-4"
+          className="text-[11px] sm:text-xs md:text-sm h-9 sm:h-10 px-1 sm:px-4 w-full"
           onClick={() => {
             setEditing(null);
             setOpen(true);
           }}
         >
-          <Plus className="size-3.5 sm:size-4" /> Tagihan
+          <Plus className="size-3 sm:size-4 shrink-0" /> Tagihan
         </Button>
       </div>
 
