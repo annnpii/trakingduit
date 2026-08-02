@@ -127,26 +127,34 @@ export default function BillsPage() {
         </Card>
       )}
 
-      <div className="flex flex-wrap justify-end gap-2">
-        <Button variant="outline" onClick={() => setSalaryOpen(true)}>
+      <div className="grid grid-cols-3 gap-2 sm:flex sm:justify-end">
+        <Button 
+          variant="outline" 
+          className="text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-4"
+          onClick={() => setSalaryOpen(true)}
+        >
           Set Gaji
         </Button>
         <Button
           variant="secondary"
+          className="text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-4"
           onClick={async () => {
             const n = await runBillReminderScan();
             toast(n ? `${n} pengingat dibuat` : "Tidak ada pengingat baru", "success");
           }}
         >
-          <BellRing className="size-4" /> Cek reminder
+          <BellRing className="size-3.5 sm:size-4" /> 
+          <span className="hidden min-[360px]:inline">Reminder</span>
+          <span className="inline min-[360px]:hidden">Cek</span>
         </Button>
         <Button
+          className="text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-4"
           onClick={() => {
             setEditing(null);
             setOpen(true);
           }}
         >
-          <Plus className="size-4" /> Tagihan
+          <Plus className="size-3.5 sm:size-4" /> Tagihan
         </Button>
       </div>
 
