@@ -116,6 +116,49 @@ export class TrackingDuitDB extends Dexie {
         }
       }
     });
+
+    // Version 5: dedupe categories by (type + name) — legacy sync bisa
+    // menciptakan banyak baris dengan id beda tapi nama sama. Pertahankan
+    // kategori default / yang paling baru, re-point transaksi & budget,
+    // lalu hapus salinan.
+    this.version(5).upgrade(async (tx) => {
+      const cats = (await tx.table("categories").toArray()) as Category[];
+      const groups = new Map<string, Category[]>();
+      for (const cat of cats) {
+        if (cat.deleted) continue;
+        const key = `${cat.type}:${cat.name.toLowerCase()}`;
+        const list = groups.get(key);
+        if (list) list.push(cat);
+        else groups.set(key, [cat]);
+      }
+      const dupToKeep = new Map<string, string>();
+      const deleteIds: string[] = [];
+      for (const list of groups.values()) {
+        if (list.length < 2) continue;
+        const sorted = [...list].sort((a, b) => {
+          const aDef = a.is_default === 1 || a.id.startsWith("ca7e1000") ? 1 : 0;
+          const bDef = b.is_default === 1 || b.id.startsWith("ca7e1000") ? 1 : 0;
+          if (aDef !== bDef) return bDef - aDef;
+          return (b.updated_at ?? "").localeCompare(a.updated_at ?? "");
+        });
+        const keep = sorted[0];
+        for (const dup of sorted.slice(1)) {
+          dupToKeep.set(dup.id, keep.id);
+          deleteIds.push(dup.id);
+        }
+      }
+      if (deleteIds.length) {
+        for (const [dupId, keepId] of dupToKeep) {
+          await tx
+            .table("transactions")
+            .where("category_id")
+            .equals(dupId)
+            .modify({ category_id: keepId });
+          await tx.table("budgets").where("category_id").equals(dupId).modify({ category_id: keepId });
+        }
+        await tx.table("categories").bulkDelete(deleteIds);
+      }
+    });
   }
 }
 

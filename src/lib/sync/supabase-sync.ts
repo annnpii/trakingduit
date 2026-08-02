@@ -4,7 +4,7 @@ import type { Table } from "dexie";
 import { db, getSetting, setSetting, seedIfEmpty } from "../db";
 import { pushNotification } from "../repo";
 import { supabaseBrowser } from "../supabase";
-import type { Syncable, SyncLog } from "../types";
+import type { Category, Syncable, SyncLog } from "../types";
 import { nowISO } from "../utils";
 
 export const LAST_SUPABASE_SYNC = "sync.supabase.lastAt";
@@ -41,6 +41,65 @@ function toLocal(row: Record<string, unknown>): Record<string, unknown> {
   return { ...rest, remote_rev: rest.updated_at };
 }
 
+/** Kategori dianggap "lebih berhak" kalau default / id statis, lalu updated_at terbaru. */
+function isPreferredCategory(
+  a: { id: string; is_default?: number; updated_at?: string },
+  b: { id: string; is_default?: number; updated_at?: string },
+): boolean {
+  const aDef = a.is_default === 1 || a.id.startsWith("ca7e1000") ? 1 : 0;
+  const bDef = b.is_default === 1 || b.id.startsWith("ca7e1000") ? 1 : 0;
+  if (aDef !== bDef) return aDef > bDef;
+  return (a.updated_at ?? "") >= (b.updated_at ?? "");
+}
+
+function categoryKey(r: { name?: string; type?: string }): string {
+  return `${r.type ?? ""}:${(r.name ?? "").toLowerCase()}`;
+}
+
+/** Saring daftar kategori supaya cuma satu survivor per (type, nama) yang dikirim. */
+function pickCategorySurvivors<T extends { id: string; is_default?: number; updated_at?: string }>(
+  rows: T[],
+): T[] {
+  const groups = new Map<string, T[]>();
+  for (const r of rows) {
+    const key = categoryKey(r as unknown as { name?: string; type?: string });
+    const list = groups.get(key);
+    if (list) list.push(r);
+    else groups.set(key, [r]);
+  }
+  const out: T[] = [];
+  for (const list of groups.values()) {
+    let best = list[0];
+    for (const r of list.slice(1)) {
+      if (isPreferredCategory(r, best)) best = r;
+    }
+    out.push(best);
+  }
+  return out;
+}
+
+/**
+ * Tarik kategori dari cloud. Kalau cloud kirim salinan yang kalah "berhak"
+ * dibanding kategori lokal (mis. id default vs id acak legacy), buang yang
+ * lokal lebih menang supaya duplikat tidak masuk lagi. Kalau cloud yang
+ * menang, buang yang kalah lokal + re-point transaksi/budget, lalu simpan.
+ */
+async function pullCategory(row: { id: string; is_default?: number; updated_at?: string; name?: string; type?: string }): Promise<boolean> {
+  const dups = await db()
+    .categories.filter((c) => !c.deleted && c.id !== row.id && categoryKey(c) === categoryKey(row))
+    .toArray();
+  const winners = dups.filter((c) => isPreferredCategory(c, row));
+  if (winners.length) return false; // lokal lebih berhak, abaikan row cloud
+  const losers = dups.filter((c) => !isPreferredCategory(c, row));
+  for (const loser of losers) {
+    await db().transactions.where("category_id").equals(loser.id).modify({ category_id: row.id });
+    await db().budgets.where("category_id").equals(loser.id).modify({ category_id: row.id });
+    await db().categories.delete(loser.id);
+  }
+  await db().categories.put(row as Category);
+  return true;
+}
+
 export async function syncSupabase(options: SupabaseSyncOptions = {}): Promise<SupabaseSyncResult> {
   const sb = supabaseBrowser();
   if (!sb) throw new Error("Supabase belum dikonfigurasi");
@@ -59,7 +118,11 @@ export async function syncSupabase(options: SupabaseSyncOptions = {}): Promise<S
       const table = local() as unknown as Table<Syncable, string>;
 
       /* push local changes */
-      const dirty = (await table.filter((r) => !r.remote_rev || r.updated_at > r.remote_rev).toArray()) as Syncable[];
+      let dirty = (await table.filter((r) => !r.remote_rev || r.updated_at > r.remote_rev).toArray()) as Syncable[];
+      // kategori: jangan kirim salinan duplikat, cukup survivor per (type, nama)
+      if (remote === "categories") {
+        dirty = pickCategorySurvivors(dirty as never[]) as unknown as Syncable[];
+      }
       if (dirty.length) {
         const { error } = await sb
           .from(remote)
@@ -83,6 +146,12 @@ export async function syncSupabase(options: SupabaseSyncOptions = {}): Promise<S
 
       for (const raw of data ?? []) {
         const row = toLocal(raw as Record<string, unknown>) as unknown as Syncable;
+        // kategori: pull yang menang preferred, buang yang kalah supaya tidak duplikat
+        if (remote === "categories") {
+          const applied = await pullCategory(row as never);
+          if (applied) pulled++;
+          continue;
+        }
         const existing = await table.get(row.id);
         // last write wins on updated_at
         if (existing && existing.updated_at >= row.updated_at) continue;

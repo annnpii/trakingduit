@@ -586,15 +586,23 @@ function CategorySheet({ open, onClose }: { open: boolean; onClose: () => void }
   const categories = useLiveQuery(() => db().categories.filter((c) => !c.deleted).toArray(), [], []);
 
   async function add() {
-    if (!name.trim()) return;
+    const clean = name.trim();
+    if (!clean) return;
+    const dup = categories.some(
+      (c) => !c.deleted && c.type === type && c.name.toLowerCase() === clean.toLowerCase(),
+    );
+    if (dup) {
+      toast("Kategori itu udah ada", "error");
+      return;
+    }
     await createCategory({
-      name: name.trim(),
+      name: clean,
       type,
       icon: "ellipsis",
       color: WALLET_COLORS[categories.length % WALLET_COLORS.length],
       is_default: 0,
       active: 1,
-      keywords: [name.trim().toLowerCase()],
+      keywords: [clean.toLowerCase()],
     });
     setName("");
     toast("Kategori ditambahkan", "success");

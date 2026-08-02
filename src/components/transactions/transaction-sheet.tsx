@@ -10,7 +10,7 @@ import {
   guessCategory,
   updateTransaction,
 } from "@/lib/repo";
-import type { ID, Transaction, TxType } from "@/lib/types";
+import type { Category, ID, Transaction, TxType } from "@/lib/types";
 import { cn, formatIDR, parseAmount, toDateKey } from "@/lib/utils";
 import {
   Button,
@@ -93,14 +93,26 @@ export function TransactionSheet({
     const filtered = categories.filter(
       (c) => c.type === (type === "income" ? "income" : "expense") && c.active === 1
     );
-    // Deduplicate by ID to prevent looping categories
-    const uniqueMap = new Map<string, typeof filtered[0]>();
-    filtered.forEach((cat) => {
-      if (!uniqueMap.has(cat.id)) {
-        uniqueMap.set(cat.id, cat);
+    // Deduplicate by (type + name, case-insensitive) — id bisa beda karena
+    // duplikat legacy dari sync, jadi dedup by id saja tidak cukup. Prefer
+    // kategori default / yang paling baru.
+    const byKey = new Map<string, Category>();
+    for (const cat of filtered) {
+      const key = `${cat.type}:${cat.name.toLowerCase()}`;
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, cat);
+        continue;
       }
-    });
-    return Array.from(uniqueMap.values());
+      const aDef = existing.is_default === 1 || existing.id.startsWith("ca7e1000") ? 1 : 0;
+      const bDef = cat.is_default === 1 || cat.id.startsWith("ca7e1000") ? 1 : 0;
+      if (aDef !== bDef) {
+        byKey.set(key, aDef > bDef ? existing : cat);
+      } else if ((cat.updated_at ?? "") > (existing.updated_at ?? "")) {
+        byKey.set(key, cat);
+      }
+    }
+    return Array.from(byKey.values());
   }, [categories, type]);
 
   React.useEffect(() => {
