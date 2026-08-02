@@ -2,14 +2,14 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
+import { X, Eye, EyeOff } from "lucide-react";
 
 /* ----------------------------------- Card ---------------------------------- */
 
 export function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("rounded-2xl border border-border bg-surface", className)}
+      className={cn("rounded-2xl bg-surface shadow-(--shadow-card)", className)}
       {...props}
     />
   );
@@ -43,10 +43,10 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "outline";
 type ButtonSize = "sm" | "md" | "lg" | "icon";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-brand text-brand-fg hover:opacity-90 shadow-sm",
+  primary: "bg-brand text-brand-fg hover:brightness-110 shadow-sm shadow-brand/20",
   secondary: "bg-surface-2 text-fg hover:bg-border/60 border border-border",
   ghost: "text-muted hover:text-fg hover:bg-surface-2",
-  danger: "bg-expense text-expense-fg hover:opacity-90",
+  danger: "bg-expense text-expense-fg hover:brightness-110",
   outline: "border border-border text-fg hover:bg-surface-2",
 };
 
@@ -73,7 +73,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex cursor-pointer items-center justify-center rounded-xl font-medium transition-colors active:scale-[0.97]",
+        "inline-flex cursor-pointer items-center justify-center rounded-full font-medium transition active:scale-[0.97]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
         "disabled:pointer-events-none disabled:opacity-50",
         VARIANTS[variant],
@@ -391,4 +391,150 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 export function Skeleton({ className }: { className?: string }) {
   return <div className={cn("animate-pulse rounded-xl bg-surface-2", className)} />;
+}
+
+/* ------------------------------- BalanceCard ------------------------------- */
+
+/** BRImo-style gradient balance hero. White text on brand gradient. */
+export function BalanceCard({
+  label,
+  value,
+  hidden,
+  onToggleHide,
+  sub,
+  className,
+}: {
+  label: React.ReactNode;
+  value: React.ReactNode;
+  hidden?: boolean;
+  onToggleHide?: () => void;
+  sub?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#003d7a,#0072c6)] p-5 text-white shadow-lg shadow-brand/30",
+        className,
+      )}
+    >
+      <div
+        className="pointer-events-none absolute -top-16 -right-12 size-48 rounded-full opacity-20 blur-3xl"
+        style={{ background: "#7cc4ff" }}
+      />
+      <div className="relative">
+        <div className="flex items-center gap-2 text-[13px] font-medium text-white/85">
+          {label}
+          {onToggleHide ? (
+            <button
+              type="button"
+              onClick={onToggleHide}
+              aria-label={hidden ? "Liat nominal" : "Sembunyiin nominal"}
+              className="text-white/80 transition hover:text-white"
+            >
+              {hidden ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          ) : null}
+        </div>
+        <p className="num mt-1 text-3xl font-bold tracking-tight sm:text-4xl">{value}</p>
+        {sub ? <div className="mt-2 text-xs text-white/80">{sub}</div> : null}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------ DonutProgress ------------------------------ */
+
+/** SVG donut with center label. BRImo budget ring. */
+export function DonutProgress({
+  value,
+  size = 148,
+  strokeWidth = 14,
+  centerLabel,
+  centerSub,
+  tone = "brand",
+  className,
+}: {
+  value: number;
+  size?: number;
+  strokeWidth?: number;
+  centerLabel: React.ReactNode;
+  centerSub?: React.ReactNode;
+  tone?: "brand" | "expense" | "warn";
+  className?: string;
+}) {
+  const r = (size - strokeWidth) / 2;
+  const c = 2 * Math.PI * r;
+  const pct = Math.min(100, Math.max(0, value));
+  const tones = {
+    brand: "var(--brand)",
+    expense: "var(--expense)",
+    warn: "var(--warn)",
+  } as const;
+  return (
+    <div className={cn("relative inline-grid place-items-center", className)} style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90" role="img" aria-label={`${Math.round(pct)}%`}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="var(--surface-2)"
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={tones[tone]}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c - (c * pct) / 100}
+          style={{ transition: "stroke-dashoffset 0.6s ease" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="num text-2xl font-bold tracking-tight">{centerLabel}</span>
+        {centerSub ? <span className="mt-0.5 text-[11px] text-muted">{centerSub}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------------- MenuTile -------------------------------- */
+
+/** Pastel quick-menu tile, 4-col grid friendly. */
+export function MenuTile({
+  icon: Icon,
+  label,
+  tone = "brand",
+  className,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  tone?: "brand" | "income" | "expense" | "warn" | "accent";
+  className?: string;
+}) {
+  const tones = {
+    brand: "bg-brand/10 text-brand",
+    income: "bg-income/10 text-income",
+    expense: "bg-expense/10 text-expense",
+    warn: "bg-warn/10 text-warn",
+    accent: "bg-accent/10 text-accent",
+  } as const;
+  return (
+    <div
+      className={cn(
+        "flex cursor-pointer flex-col items-center gap-2 rounded-2xl bg-surface p-3 shadow-(--shadow-card) transition active:scale-[0.96]",
+        className,
+      )}
+    >
+      <span className={cn("grid size-11 place-items-center rounded-2xl", tones[tone])}>
+        <Icon className="size-5" />
+      </span>
+      <span className="text-[11px] font-medium text-fg">{label}</span>
+    </div>
+  );
 }

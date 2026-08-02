@@ -4,36 +4,44 @@
 
 :root {
   color-scheme: light;
-  --bg: #f8fafc;
+  --bg: #f5f7fa;
   --surface: #ffffff;
-  --surface-2: #f1f5f9;
-  --border: #e5e7eb;
-  --fg: #111827;
+  --surface-2: #eef2f7;
+  --border: #e2e8f0;
+  --fg: #1a1a1a;
   --fg-muted: #6b7280;
-  --brand: #0c805e;
+  --brand: #0060af;
   --brand-fg: #ffffff;
-  --income: #0c805e;
-  --expense: #d03445;
+  --brand-grad: linear-gradient(135deg, #003d7a, #0072c6);
+  --accent: #e8600c;
+  --accent-fg: #ffffff;
+  --income: #16a34a;
+  --income-fg: #ffffff;
+  --expense: #dc2626;
   --expense-fg: #ffffff;
-  --warn: #a95f12;
-  --shadow-card: 0 1px 2px rgb(17 24 39 / 0.05), 0 6px 20px rgb(17 24 39 / 0.06);
-  --shadow-pop: 0 4px 12px rgb(17 24 39 / 0.08), 0 16px 40px rgb(17 24 39 / 0.12);
+  --warn: #b45309;
+  --shadow-card: 0 2px 8px rgb(15 23 42 / 0.06), 0 8px 24px rgb(15 23 42 / 0.08);
+  --shadow-pop: 0 8px 24px rgb(15 23 42 / 0.1), 0 20px 48px rgb(15 23 42 / 0.14);
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0f1115;
-  --surface: #171a21;
-  --surface-2: #1d212b;
-  --border: #262b36;
-  --fg: #f5f7fa;
-  --fg-muted: #a1a1aa;
-  --brand: #2ee6a8;
-  --brand-fg: #04140f;
-  --income: #2ee6a8;
-  --expense: #ff7b8a;
+  --bg: #0b1220;
+  --surface: #111a2e;
+  --surface-2: #182342;
+  --border: #24304d;
+  --fg: #f1f5f9;
+  --fg-muted: #94a3b8;
+  --brand: #3b9bff;
+  --brand-fg: #04121f;
+  --brand-grad: linear-gradient(135deg, #0b3a6d, #0f6bb8);
+  --accent: #ff8a3d;
+  --accent-fg: #1f0a00;
+  --income: #34d399;
+  --income-fg: #04140f;
+  --expense: #f87171;
   --expense-fg: #20050a;
-  --warn: #f2b544;
+  --warn: #fbbf24;
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.35);
   --shadow-pop: 0 4px 12px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.5);
 }
@@ -47,12 +55,16 @@
   --color-muted: var(--fg-muted);
   --color-brand: var(--brand);
   --color-brand-fg: var(--brand-fg);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
   --color-income: var(--income);
   --color-expense: var(--expense);
   --color-expense-fg: var(--expense-fg);
   --color-warn: var(--warn);
   --font-sans: var(--font-jakarta);
   --radius-2xl: 1.25rem;
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
 }
 
 html,

@@ -129,11 +129,11 @@ export default function ScanPage() {
 
       <Card className="p-5">
         <div className="flex items-start gap-4">
-          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand/10 text-brand">
+          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-brand/10 text-brand">
             <ScanLine className="size-6" />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold">Scan struk belanja</h2>
+            <h2 className="text-sm font-semibold tracking-tight">Scan struk belanja</h2>
             <p className="mt-1 text-xs text-muted">
               Foto struknya, nominal sama nama toko bakal keisi otomatis. Bisa lo edit sebelum disimpen.
             </p>

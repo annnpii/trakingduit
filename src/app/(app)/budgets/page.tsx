@@ -118,7 +118,7 @@ export default function BudgetsPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span
-                      className="grid size-10 place-items-center rounded-xl"
+                      className="grid size-10 place-items-center rounded-full"
                       style={{ background: `${cat?.color ?? "#94a3b8"}1f`, color: cat?.color }}
                     >
                       <DynIcon name={cat?.icon} className="size-4.5" />

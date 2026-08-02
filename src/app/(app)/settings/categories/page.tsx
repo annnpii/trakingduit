@@ -33,7 +33,7 @@ export default function CategoriesSettingsPage() {
             <ChevronLeft className="size-5" />
           </Button>
         </Link>
-        <h1 className="text-xl font-bold">Atur Kategori</h1>
+        <h1 className="text-xl font-bold tracking-tight">Atur Kategori</h1>
       </div>
 
       <p className="text-sm text-muted">
@@ -46,7 +46,7 @@ export default function CategoriesSettingsPage() {
           {income.map((cat) => (
             <div key={cat.id} className="flex items-center gap-3 p-3">
               <span
-                className="grid size-9 shrink-0 place-items-center rounded-lg"
+                className="grid size-9 shrink-0 place-items-center rounded-full"
                 style={{ background: `${cat.color}22`, color: cat.color }}
               >
                 <DynIcon name={cat.icon} className="size-4" />
@@ -75,7 +75,7 @@ export default function CategoriesSettingsPage() {
           {expense.map((cat) => (
             <div key={cat.id} className="flex items-center gap-3 p-3">
               <span
-                className="grid size-9 shrink-0 place-items-center rounded-lg"
+                className="grid size-9 shrink-0 place-items-center rounded-full"
                 style={{ background: `${cat.color}22`, color: cat.color }}
               >
                 <DynIcon name={cat.icon} className="size-4" />

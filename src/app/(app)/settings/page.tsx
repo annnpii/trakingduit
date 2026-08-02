@@ -253,7 +253,7 @@ export default function SettingsPage() {
         <CardHeader title="Sinkronisasi" subtitle="Spreadsheet & cloud" />
         <div className="divide-y divide-border">
           <div className="flex flex-wrap items-center gap-3 p-4">
-            <span className="grid size-10 place-items-center rounded-xl bg-income/10 text-income">
+            <span className="grid size-10 place-items-center rounded-full bg-income/10 text-income">
               <FileSpreadsheet className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
@@ -282,7 +282,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 p-4">
-            <span className="grid size-10 place-items-center rounded-xl bg-brand/10 text-brand">
+            <span className="grid size-10 place-items-center rounded-full bg-brand/10 text-brand">
               <CloudUpload className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
@@ -368,7 +368,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* Danger zone */}
-      <Card className="border-expense/30">
+      <Card>
         <CardHeader title="Zona berbahaya" subtitle="Aksi berikut tidak bisa dibatalkan" />
         <div className="space-y-2 p-4">
           {confirmReset ? (
@@ -634,7 +634,7 @@ function CategorySheet({ open, onClose }: { open: boolean; onClose: () => void }
                 .map((c) => (
                   <li key={c.id} className="flex items-center gap-3 px-3 py-2">
                     <span
-                      className="grid size-8 place-items-center rounded-lg"
+                      className="grid size-8 place-items-center rounded-full"
                       style={{ background: `${c.color}1f`, color: c.color }}
                     >
                       <DynIcon name={c.icon} className="size-4" />

@@ -14,7 +14,7 @@ import { db } from "@/lib/db";
 import { markAllNotificationsRead, markNotificationRead } from "@/lib/repo";
 import type { AppNotification } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
-import { Button, Card, EmptyState } from "@/components/ui";
+import { Badge, Button, Card, EmptyState } from "@/components/ui";
 
 const KIND_ICON = {
   bill: CalendarClock,
@@ -61,7 +61,7 @@ export default function NotificationsPage() {
                   >
                     <span
                       className={cn(
-                        "grid size-9 shrink-0 place-items-center rounded-xl",
+                        "grid size-9 shrink-0 place-items-center rounded-full",
                         n.kind === "budget"
                           ? "bg-expense/10 text-expense"
                           : n.kind === "bill"
@@ -74,7 +74,7 @@ export default function NotificationsPage() {
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2">
                         <span className="truncate text-sm font-medium">{n.title}</span>
-                        {!n.read ? <span className="size-1.5 rounded-full bg-brand" /> : null}
+                        {!n.read ? <Badge tone="brand">Baru</Badge> : null}
                       </span>
                       <span className="mt-0.5 block text-xs text-muted">{n.body}</span>
                       <span className="mt-1 block text-[11px] text-muted">

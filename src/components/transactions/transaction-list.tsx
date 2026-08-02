@@ -123,7 +123,7 @@ function TransactionRow({
         className="flex w-full items-center gap-3 bg-surface px-4 py-3 text-left transition hover:bg-surface-2"
       >
         <span
-          className="grid size-10 shrink-0 place-items-center rounded-xl"
+          className="grid size-10 shrink-0 place-items-center rounded-full"
           style={{ background: `${color}1f`, color }}
         >
           {isTransfer ? (

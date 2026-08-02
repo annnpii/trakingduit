@@ -68,29 +68,36 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <MonthSwitcher value={month} onChange={setMonth} />
-        <div className="flex gap-2">
-          <SegmentedControl
-            value={scope}
-            onChange={setScope}
-            options={[
-              { value: "expense", label: "Keluar" },
-              { value: "income", label: "Masuk" },
-            ]}
-          />
-          <Button variant="ghost" size="icon" onClick={exportCsv} aria-label="Ekspor CSV">
-            <Download className="size-4" />
-          </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold tracking-tight">Analitik</h1>
+          <p className="text-xs text-muted">Grafik pemasukan dan pengeluaran</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <MonthSwitcher value={month} onChange={setMonth} />
+          <div className="flex gap-2">
+            <SegmentedControl
+              value={scope}
+              onChange={setScope}
+              options={[
+                { value: "expense", label: "Keluar" },
+                { value: "income", label: "Masuk" },
+              ]}
+            />
+            <Button variant="ghost" size="icon" onClick={exportCsv} aria-label="Ekspor CSV">
+              <Download className="size-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Duit masuk" value={t.income} tone="income" />
+        <StatTile label="Duit masuk" value={t.income} tone="income" className="border-0 shadow-(--shadow-card)" />
         <StatTile
           label="Duit keluar"
           value={t.expense}
           tone="expense"
+          className="border-0 shadow-(--shadow-card)"
           hint={
             prevMonth && prevTotals.expense ? (
               <span className="inline-flex items-center gap-1">
@@ -104,11 +111,17 @@ export default function AnalyticsPage() {
             ) : undefined
           }
         />
-        <StatTile label="Sisa" value={t.net} tone={t.net >= 0 ? "income" : "expense"} />
+        <StatTile
+          label="Sisa"
+          value={t.net}
+          tone={t.net >= 0 ? "income" : "expense"}
+          className="border-0 shadow-(--shadow-card)"
+        />
         <StatTile
           label="Rasio nabung"
           value={`${Math.round(rate * 100)}%`}
           tone="brand"
+          className="border-0 shadow-(--shadow-card)"
           hint={`Rata-rata per hari ${formatIDR(averageDailySpend(monthTx, month))}`}
         />
       </div>
@@ -141,7 +154,7 @@ export default function AnalyticsPage() {
               </div>
             </Card>
             <Card>
-              <CardHeader title="Tren sisa bulanan" subtitle="Masuk − keluar" />
+              <CardHeader title="Tren sisa bulanan" subtitle="Masuk - keluar" />
               <div className="px-2 pt-2 pb-3">
                 <NetTrendChart data={monthly} />
               </div>

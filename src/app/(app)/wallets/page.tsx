@@ -9,7 +9,7 @@ import { WALLET_COLORS, WALLET_TYPE_LABEL } from "@/lib/seed";
 import type { Wallet, WalletType } from "@/lib/types";
 import { cn, formatIDR, parseAmount } from "@/lib/utils";
 import {
-  Badge,
+  BalanceCard,
   Button,
   Card,
   EmptyState,
@@ -60,11 +60,10 @@ export default function WalletsPage() {
 
   return (
     <div className="space-y-4">
-      <Card className="flex items-center justify-between p-5">
-        <div>
-          <p className="text-xs text-muted">Total semua dompet</p>
-          <p className="num mt-1 text-2xl font-semibold">{formatIDR(total)}</p>
-          <p className="mt-1 text-xs text-muted">{active.length} dompet aktif</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold tracking-tight">Dompet</h1>
+          <p className="text-xs text-muted">Kelola saldo tiap akun</p>
         </div>
         <Button
           onClick={() => {
@@ -72,9 +71,15 @@ export default function WalletsPage() {
             setOpen(true);
           }}
         >
-          <Plus className="size-4" /> Tambah Dompet
+          <Plus className="size-4" /> Tambah Akun Baru
         </Button>
-      </Card>
+      </div>
+
+      <BalanceCard
+        label="Total saldo gabungan"
+        value={formatIDR(total)}
+        sub={<span>{active.length} dompet aktif</span>}
+      />
 
       {active.length ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -126,7 +131,7 @@ export default function WalletsPage() {
 
       {archived.length ? (
         <section>
-          <h2 className="mb-2 px-1 text-xs font-medium text-muted">Diarsip</h2>
+          <h2 className="mb-2 px-1 text-sm font-semibold tracking-tight text-muted">Diarsip</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {archived.map((w) => (
               <WalletCard
@@ -185,16 +190,22 @@ function WalletCard({
   onDelete: () => void;
 }) {
   return (
-    <Card className={cn("p-4", wallet.archived && "opacity-60")}>
+    <Card
+      className={cn("relative overflow-hidden p-4 text-white", wallet.archived && "opacity-60")}
+      style={{ background: `linear-gradient(135deg, ${wallet.color}, ${wallet.color}cc)` }}
+    >
       <div className="flex items-start justify-between">
-        <span
-          className="grid size-11 place-items-center rounded-xl"
-          style={{ background: `${wallet.color}1f`, color: wallet.color }}
-        >
+        <span className="grid size-11 place-items-center rounded-full bg-white/15 text-white">
           <DynIcon name={wallet.icon} className="size-5" />
         </span>
         <div className="flex gap-1">
-          <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Edit dompet">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onEdit}
+            aria-label="Edit dompet"
+            className="text-white hover:bg-white/15 hover:text-white"
+          >
             <Pencil className="size-3.5" />
           </Button>
           <Button
@@ -202,6 +213,7 @@ function WalletCard({
             size="icon"
             onClick={onArchive}
             aria-label={wallet.archived ? "Aktifin" : "Arsip"}
+            className="text-white hover:bg-white/15 hover:text-white"
           >
             {wallet.archived ? (
               <ArchiveRestore className="size-3.5" />
@@ -209,18 +221,26 @@ function WalletCard({
               <Archive className="size-3.5" />
             )}
           </Button>
-          <Button variant="ghost" size="icon" onClick={onDelete} aria-label="Hapus dompet" className="text-red-500 hover:text-red-600 hover:bg-red-500/10">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onDelete}
+            aria-label="Hapus dompet"
+            className="text-white hover:bg-white/15 hover:text-white"
+          >
             <Trash2 className="size-3.5" />
           </Button>
         </div>
       </div>
-      <p className="mt-3 truncate text-sm font-medium">{wallet.name}</p>
-      <p className={cn("num mt-0.5 text-xl font-semibold", balance < 0 && "text-expense")}>
+      <p className="mt-3 truncate text-sm font-medium text-white">{wallet.name}</p>
+      <p className={cn("num mt-0.5 text-xl font-semibold", balance < 0 && "text-white/70")}>
         {formatIDR(balance)}
       </p>
       <div className="mt-2 flex items-center gap-2">
-        <Badge>{WALLET_TYPE_LABEL[wallet.type]}</Badge>
-        <span className="text-[11px] text-muted">{txCount} transaksi</span>
+        <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-medium text-white">
+          {WALLET_TYPE_LABEL[wallet.type]}
+        </span>
+        <span className="text-[11px] text-white/80">{txCount} transaksi</span>
       </div>
     </Card>
   );

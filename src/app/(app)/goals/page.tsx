@@ -72,7 +72,7 @@ export default function GoalsPage() {
               <Card key={g.id} className={cn("p-4", g.archived && "opacity-60")}>
                 <div className="flex items-start justify-between">
                   <span
-                    className="grid size-10 place-items-center rounded-xl"
+                    className="grid size-10 place-items-center rounded-full"
                     style={{ background: `${g.color}1f`, color: g.color }}
                   >
                     <DynIcon name={g.icon} className="size-4.5" />

@@ -224,7 +224,7 @@ function BottomNav({ pathname, onAdd }: { pathname: string; onAdd: () => void })
           <button
             onClick={onAdd}
             aria-label="Catat transaksi"
-            className="-mt-6 grid size-13 place-items-center rounded-2xl bg-brand text-brand-fg shadow-lg shadow-brand/25 transition active:scale-95"
+            className="-mt-6 grid size-14 place-items-center rounded-full bg-[linear-gradient(135deg,#e8600c,#ff7a00)] text-white shadow-lg shadow-orange-500/30 transition active:scale-95"
           >
             <Plus className="size-6" />
           </button>

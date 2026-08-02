@@ -62,6 +62,21 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold tracking-tight">Transaksi</h1>
+          <p className="text-xs text-muted">Semua catatan bulan ini</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={exportCsv} aria-label="Ekspor CSV">
+            <Download className="size-4" />
+          </Button>
+          <Button onClick={() => setAdding(true)} className="hidden sm:inline-flex">
+            <Plus className="size-4" /> Catat transaksi
+          </Button>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <MonthSwitcher value={month} onChange={setMonth} />
         <div className="relative min-w-40 flex-1">
@@ -80,12 +95,6 @@ export default function TransactionsPage() {
           aria-label="Filter"
         >
           <SlidersHorizontal className="size-4" />
-        </Button>
-        <Button variant="ghost" size="icon" onClick={exportCsv} aria-label="Ekspor CSV">
-          <Download className="size-4" />
-        </Button>
-        <Button onClick={() => setAdding(true)} className="hidden sm:inline-flex">
-          <Plus className="size-4" /> Catat transaksi
         </Button>
       </div>
 

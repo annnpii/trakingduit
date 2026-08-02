@@ -100,12 +100,12 @@ export default function InsightPage() {
       {ai ? (
         <Card className="p-5">
           <div className="flex items-start gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-brand/10 text-brand">
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand/10 text-brand">
               <Sparkles className="size-5" />
             </span>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold">Ringkasan AI</h2>
+                <h2 className="text-sm font-semibold tracking-tight">Ringkasan AI</h2>
                 {aiModel ? <Badge tone="brand">{aiModel}</Badge> : null}
               </div>
               <p className="mt-1.5 text-sm leading-relaxed text-muted">{ai.summary}</p>
@@ -134,7 +134,7 @@ export default function InsightPage() {
               <ol className="space-y-2">
                 {ai.actions.map((a, i) => (
                   <li key={i} className="flex gap-3 rounded-xl border border-border bg-surface-2 p-3">
-                    <span className="num grid size-6 shrink-0 place-items-center rounded-lg bg-brand text-[11px] font-semibold text-brand-fg">
+                    <span className="num grid size-6 shrink-0 place-items-center rounded-full bg-brand text-[11px] font-semibold text-brand-fg">
                       {i + 1}
                     </span>
                     <span className="min-w-0">

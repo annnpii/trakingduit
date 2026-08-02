@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { CloudOff, PiggyBank, ScanLine, Sparkles, Wallet } from "lucide-react";
+import { PiggyBank } from "lucide-react";
 import { useSession } from "@/lib/session";
 import { Button, Field, Input, SegmentedControl, Spinner } from "@/components/ui";
 
@@ -29,7 +29,7 @@ export default function LoginPage() {
   if (status === "loading") {
     return (
       <div className="flex min-h-dvh items-center justify-center">
-        <Spinner className="size-6 text-brand" />
+        <Spinner className="size-6 text-white" />
       </div>
     );
   }
@@ -54,47 +54,41 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-dvh lg:grid-cols-2">
-      <aside className="relative hidden flex-col justify-between overflow-hidden bg-surface p-10 lg:flex">
-        <div
-          className="pointer-events-none absolute -top-32 -right-24 size-96 rounded-full opacity-20 blur-3xl"
-          style={{ background: "var(--brand)" }}
-        />
-        <div className="flex items-center gap-2">
-          <span className="grid size-10 place-items-center rounded-xl bg-brand text-brand-fg">
-            <PiggyBank className="size-5" />
-          </span>
-          <span className="text-lg font-semibold">TrackingDuit</span>
-        </div>
-        <div className="relative space-y-6">
-          <h1 className="max-w-sm text-3xl leading-tight font-semibold">
-            Cuan dicatat, dompet ke-track.
-          </h1>
-          <ul className="space-y-3 text-sm text-muted">
-            <Feature icon={Wallet} text="Multi-wallet: tunai, bank, e-wallet, kartu kredit" />
-            <Feature icon={ScanLine} text="Scan nota, nominal & merchant auto-keisi" />
-            <Feature icon={Sparkles} text="Analitik seru + insight pengeluaran bulanan" />
-            <Feature icon={CloudOff} text="Offline-first, sinkron ke Google Sheet & Supabase" />
-          </ul>
-        </div>
-        <p className="text-xs text-muted">Data aman tersimpan di perangkat kamu.</p>
-      </aside>
+    <div
+      className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-5 py-10"
+      style={{ background: "var(--brand-grad)" }}
+    >
+      <div
+        className="pointer-events-none absolute -top-24 -right-20 size-72 rounded-full opacity-20 blur-3xl"
+        style={{ background: "#7cc4ff" }}
+      />
+      <div
+        className="pointer-events-none absolute -bottom-28 -left-24 size-80 rounded-full opacity-15 blur-3xl"
+        style={{ background: "#ff8a3d" }}
+      />
 
-      <main className="flex items-center justify-center px-6 py-12">
-        <form onSubmit={submit} className="w-full max-w-sm space-y-5">
-          <div className="lg:hidden">
-            <span className="grid size-12 place-items-center rounded-2xl bg-brand text-brand-fg">
-              <PiggyBank className="size-6" />
-            </span>
-          </div>
-          <div>
-            <h2 className="text-2xl font-semibold">Yuk masuk dulu</h2>
-            <p className="mt-1 text-sm text-muted">
-              {supabaseEnabled
-                ? "Pake akun buat sync di semua device, atau mode offline aja gpp."
-                : "Mode offline aktif - data lo cuma ada di browser ini."}
-            </p>
-          </div>
+      <div className="relative w-full max-w-md">
+        {/* Logo + greeting */}
+        <div className="mb-8 flex flex-col items-center text-center">
+          <span className="grid size-14 place-items-center rounded-2xl bg-white/15 text-white backdrop-blur-sm">
+            <PiggyBank className="size-7" />
+          </span>
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">TrakingDuit</h1>
+          <p className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            Hai, Selamat Datang!
+          </p>
+          <p className="mt-2 text-sm text-white/80">
+            Catat duit, pantau pengeluaran, wujudkan target.
+          </p>
+        </div>
+
+        {/* Floating card */}
+        <form onSubmit={submit} className="space-y-4 rounded-3xl bg-surface p-6 shadow-(--shadow-pop)">
+          <p className="text-xs text-muted">
+            {supabaseEnabled
+              ? "Pake akun buat sync di semua device, atau mode offline aja gpp."
+              : "Mode offline aktif - data lo cuma ada di browser ini."}
+          </p>
 
           {supabaseEnabled ? (
             <SegmentedControl
@@ -161,8 +155,13 @@ export default function LoginPage() {
             </p>
           ) : null}
 
-          <Button type="submit" size="lg" className="w-full" loading={busy}>
-            {mode === "cloud" && cloudMode === "register" ? "Daftar" : "Mulai"}
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full bg-[linear-gradient(135deg,#003d7a,#0060af)] text-white shadow-lg shadow-brand/25"
+            loading={busy}
+          >
+            {mode === "cloud" && cloudMode === "register" ? "Daftar" : "Masuk"}
           </Button>
 
           {mode === "cloud" ? (
@@ -175,24 +174,11 @@ export default function LoginPage() {
             </button>
           ) : null}
         </form>
-      </main>
-    </div>
-  );
-}
 
-function Feature({
-  icon: Icon,
-  text,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  text: string;
-}) {
-  return (
-    <li className="flex items-center gap-3">
-      <span className="grid size-8 place-items-center rounded-lg bg-brand/10 text-brand">
-        <Icon className="size-4" />
-      </span>
-      {text}
-    </li>
+        <p className="mt-6 text-center text-xs text-white/70">
+          Data aman tersimpan di perangkat kamu.
+        </p>
+      </div>
+    </div>
   );
 }

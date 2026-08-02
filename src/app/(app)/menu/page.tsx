@@ -55,7 +55,7 @@ export default function MenuPage() {
                 href={item.href}
                 className="flex items-center gap-3 px-4 py-3 transition hover:bg-surface-2"
               >
-                <span className="grid size-9 place-items-center rounded-xl bg-brand/10 text-brand">
+                <span className="grid size-9 place-items-center rounded-full bg-brand/10 text-brand">
                   <item.icon className="size-4" />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -74,7 +74,7 @@ export default function MenuPage() {
       </Button>
 
       <p className="text-center text-xs text-muted">
-        TrackingDuit v1.4.5
+        TrackingDuit v1.5.0
       </p>
     </div>
   );

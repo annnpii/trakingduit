@@ -160,7 +160,7 @@ export default function BillsPage() {
                   <div className="flex min-w-0 items-center gap-3">
                     <span
                       className={cn(
-                        "grid size-10 shrink-0 place-items-center rounded-xl",
+                        "grid size-10 shrink-0 place-items-center rounded-full",
                         late ? "bg-expense/10 text-expense" : "bg-warn/10 text-warn",
                       )}
                     >
