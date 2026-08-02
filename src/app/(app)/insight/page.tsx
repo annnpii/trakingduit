@@ -73,7 +73,7 @@ export default function InsightPage() {
         body: JSON.stringify({ payload: buildInsightPayload(input) }),
       });
       if (res.status === 501) {
-        toast("AI belum aktif - set ANTHROPIC_API_KEY di .env.local", "info");
+        toast("AI belum aktif - set API Key di .env.local", "info");
         return;
       }
       const json = (await res.json()) as { insight?: AiInsight; model?: string; error?: string };

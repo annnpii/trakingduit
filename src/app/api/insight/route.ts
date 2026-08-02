@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { isSupabaseConfigured, supabaseFromRequest } from "@/lib/supabase";
 import { insightRequestSchema, createErrorResponse } from "@/lib/validation";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-5";
+const API_URL = process.env.AI_API_URL ?? "http://100.106.72.4:20128/v1";
+const API_KEY = process.env.AI_API_KEY ?? "sk-2aff3e352fd9b602-jlz5v4-6c686866";
+const MODEL = process.env.AI_MODEL ?? "oc/deepseek-v4-flash-free";
 
 const SYSTEM = `Kamu penasihat keuangan pribadi untuk pengguna Indonesia.
 Kamu menerima ringkasan keuangan bulanan dalam JSON (mata uang Rupiah).
@@ -16,50 +17,29 @@ Aturan:
 - Sebut angka dari data, jangan mengarang angka yang tidak ada.
 - Fokus ke pola yang bisa diubah pengguna bulan depan.
 - Nada praktis dan tidak menghakimi. Hindari jargon finansial berat.
-- Setiap rekomendasi harus punya langkah konkret, bukan nasihat umum.`;
+- Setiap rekomendasi harus punya langkah konkret, bukan nasihat umum.
 
-const OUTPUT_SCHEMA = {
-  type: "object",
-  properties: {
-    summary: {
-      type: "string",
-      description: "Ringkasan kondisi keuangan bulan ini, maksimal 3 kalimat.",
-    },
-    highlights: {
-      type: "array",
-      description: "3-5 temuan penting dari data.",
-      items: {
-        type: "object",
-        properties: {
-          title: { type: "string", description: "Judul temuan, maksimal 8 kata." },
-          detail: { type: "string", description: "Penjelasan 1-2 kalimat dengan angka." },
-          tone: { type: "string", enum: ["positive", "warning", "danger", "neutral"] },
-        },
-        required: ["title", "detail", "tone"],
-        additionalProperties: false,
-      },
-    },
-    actions: {
-      type: "array",
-      description: "2-4 langkah konkret untuk bulan depan.",
-      items: {
-        type: "object",
-        properties: {
-          action: { type: "string", description: "Langkah yang bisa langsung dikerjakan." },
-          impact: { type: "string", description: "Perkiraan dampak, sertakan angka bila bisa." },
-        },
-        required: ["action", "impact"],
-        additionalProperties: false,
-      },
-    },
-  },
-  required: ["summary", "highlights", "actions"],
-  additionalProperties: false,
-} as const;
+Kamu WAJIB mengembalikan output dalam format JSON murni dengan skema berikut tanpa backticks markdown atau teks tambahan di luar JSON:
+{
+  "summary": "Ringkasan kondisi keuangan bulan ini, maksimal 3 kalimat.",
+  "highlights": [
+    {
+      "title": "Judul temuan, maksimal 8 kata.",
+      "detail": "Penjelasan 1-2 kalimat dengan angka.",
+      "tone": "positive" | "warning" | "danger" | "neutral"
+    }
+  ],
+  "actions": [
+    {
+      "action": "Langkah yang bisa langsung dikerjakan.",
+      "impact": "Perkiraan dampak, sertakan angka bila bisa."
+    }
+  ]
+}`;
 
 /**
  * POST /api/insight — LLM summary on top of the local rule-based engine.
- * Returns 501 when ANTHROPIC_API_KEY is unset so the client keeps using the
+ * Returns 501 when API Key is unset so the client keeps using the
  * offline insights instead of showing an error.
  */
 export async function POST(request: Request) {
@@ -70,9 +50,9 @@ export async function POST(request: Request) {
     if (!auth.user) return NextResponse.json({ error: "Token tidak valid" }, { status: 401 });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!API_KEY) {
     return NextResponse.json(
-      { error: "ANTHROPIC_API_KEY belum diset", fallback: "rules" },
+      { error: "API Key belum diset", fallback: "rules" },
       { status: 501 },
     );
   }
@@ -96,30 +76,44 @@ export async function POST(request: Request) {
   if (!payload) return NextResponse.json(createErrorResponse("Field 'payload' wajib"), { status: 400 });
 
   try {
-    const client = new Anthropic();
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 16000,
-      system: SYSTEM,
-      output_config: { format: { type: "json_schema", schema: OUTPUT_SCHEMA } },
-      messages: [
-        {
-          role: "user",
-          content: `Ringkasan keuangan bulan ini:\n\n${JSON.stringify(payload, null, 2)}`,
-        },
-      ],
+    const apiRes = await fetch(`${API_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [
+          { role: "system", content: SYSTEM },
+          { role: "user", content: `Ringkasan keuangan bulan ini:\n\n${JSON.stringify(payload, null, 2)}` }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3,
+      }),
     });
 
-    if (response.stop_reason === "refusal") {
-      return NextResponse.json({ error: "Permintaan ditolak model" }, { status: 422 });
+    if (!apiRes.ok) {
+      const errorText = await apiRes.text();
+      return NextResponse.json(
+        createErrorResponse(`API Error (${apiRes.status}): ${errorText}`),
+        { status: 502 }
+      );
     }
 
-    const text = response.content
-      .filter((block): block is Anthropic.TextBlock => block.type === "text")
-      .map((block) => block.text)
-      .join("");
+    const resData = await apiRes.json();
+    const content = resData.choices?.[0]?.message?.content;
+    if (!content) {
+      return NextResponse.json(
+        createErrorResponse("Model mengembalikan respons kosong"),
+        { status: 502 }
+      );
+    }
 
-    return NextResponse.json({ insight: JSON.parse(text), model: response.model });
+    const cleanJsonText = content.trim().replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+    const parsedInsight = JSON.parse(cleanJsonText);
+
+    return NextResponse.json({ insight: parsedInsight, model: MODEL });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Gagal memanggil model";
     return NextResponse.json(createErrorResponse(message), { status: 502 });
