@@ -132,6 +132,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         supabase_user_id: uid,
       };
       await db().profile.put(row);
+
+      // Blok login agar menarik data dari server terlebih dahulu
+      if (mode === "login") {
+        try {
+          await syncSupabase({ silent: true });
+        } catch (e) {
+          console.error("Gagal menarik data awal pasca login:", e);
+        }
+      }
+
+      // Pastikan seed dijalankan hanya setelah data cloud ditarik 
+      // (jika data cloud memang kosong, seed akan memasukkan default)
+      await seedIfEmpty();
+
       sessionStorage.setItem(UNLOCK_KEY, createUnlockToken());
       setProfile(row);
       setStatus("ready");

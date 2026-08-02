@@ -32,6 +32,7 @@ export default function WalletsPage() {
   const balances = useLiveQuery(
     async () => {
       await db().transactions.count();
+      await db().wallets.count();
       return allWalletBalances();
     },
     [],
@@ -84,12 +85,7 @@ export default function WalletsPage() {
       />
 
       {active.length ? (
-        <motion.div
-          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-          variants={getAnimation(staggerContainer)}
-          initial="hidden"
-          animate="visible"
-        >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {active.map((w) => (
             <WalletCard
               key={w.id}
@@ -104,7 +100,7 @@ export default function WalletsPage() {
               onDelete={() => setDeleteConfirm(w)}
             />
           ))}
-        </motion.div>
+        </div>
       ) : (
         <Card>
           <EmptyState
@@ -218,7 +214,7 @@ function WalletCard({
   onDelete: () => void;
 }) {
   return (
-    <motion.div variants={getAnimation(staggerItem)}>
+    <div>
       <Card
         className={cn("relative overflow-hidden p-4 text-white", wallet.archived && "opacity-60")}
         style={{ background: `linear-gradient(135deg, ${wallet.color}, ${wallet.color}cc)` }}
@@ -272,7 +268,7 @@ function WalletCard({
         <span className="text-[11px] text-white/80">{txCount} transaksi</span>
       </div>
     </Card>
-    </motion.div>
+    </div>
   );
 }
 

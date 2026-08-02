@@ -72,10 +72,12 @@ export function TransactionSheet({
   const [merchant, setMerchant] = React.useState("");
   const [note, setNote] = React.useState("");
   const [saving, setSaving] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
 
   // Reset the form each time the sheet opens.
   React.useEffect(() => {
     if (!open) return;
+    setConfirmDelete(false);
     const base = editing ?? draft ?? {};
     setType((base.type as TxType) ?? "expense");
     setAmount(base.amount ? String(base.amount) : "");
@@ -196,7 +198,7 @@ export function TransactionSheet({
       footer={
         <div className="flex gap-2">
           {editing ? (
-            <Button variant="ghost" size="lg" onClick={remove} aria-label="Hapus">
+            <Button variant="ghost" size="lg" onClick={() => setConfirmDelete(true)} aria-label="Hapus">
               <Trash2 className="size-4 text-expense" />
             </Button>
           ) : null}
@@ -348,6 +350,35 @@ export function TransactionSheet({
           />
         </Field>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Sheet
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title="Hapus Transaksi"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            Yakin ingin menghapus transaksi ini?
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="lg" className="flex-1" onClick={() => setConfirmDelete(false)}>
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              size="lg"
+              className="flex-1"
+              onClick={async () => {
+                await remove();
+                setConfirmDelete(false);
+              }}
+            >
+              Hapus
+            </Button>
+          </div>
+        </div>
+      </Sheet>
     </Sheet>
   );
 }

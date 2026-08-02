@@ -34,6 +34,7 @@ export default function BillsPage() {
   const [editing, setEditing] = React.useState<Bill | null>(null);
   const [salaryOpen, setSalaryOpen] = React.useState(false);
   const [hideBalance, setHideBalance] = React.useState(false);
+  const [deleteConfirm, setDeleteConfirm] = React.useState<Bill | null>(null);
 
   React.useEffect(() => {
     const val = localStorage.getItem("td.hideBalance") === "1";
@@ -189,7 +190,7 @@ export default function BillsPage() {
                       variant="ghost"
                       size="icon"
                       aria-label="Hapus"
-                      onClick={() => deleteBill(b.id)}
+                      onClick={() => setDeleteConfirm(b)}
                     >
                       <Trash2 className="size-3.5 text-expense" />
                     </Button>
@@ -264,6 +265,37 @@ export default function BillsPage() {
         month={month}
         initialAmount={salary?.amount}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Sheet
+        open={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title="Hapus Tagihan"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            Yakin ingin menghapus tagihan <strong>{deleteConfirm?.name}</strong>?
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="lg" className="flex-1" onClick={() => setDeleteConfirm(null)}>
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              size="lg"
+              className="flex-1"
+              onClick={async () => {
+                if (!deleteConfirm) return;
+                await deleteBill(deleteConfirm.id);
+                toast("Tagihan berhasil dihapus", "success");
+                setDeleteConfirm(null);
+              }}
+            >
+              Hapus
+            </Button>
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 }

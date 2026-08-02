@@ -47,7 +47,16 @@ export default function LoginPage() {
       }
       router.replace("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal masuk nih");
+      if (err instanceof Error) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes("invalid login credentials") || msg.includes("invalid credentials")) {
+          setError("Username atau password salah, coba lagi");
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError("Gagal masuk nih");
+      }
     } finally {
       setBusy(false);
     }

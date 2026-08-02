@@ -27,6 +27,7 @@ export default function GoalsPage() {
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<SavingGoal | null>(null);
   const [contributing, setContributing] = React.useState<SavingGoal | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = React.useState<SavingGoal | null>(null);
 
   const goals = useLiveQuery(() => db().goals.filter((g) => !g.deleted).toArray(), [], []);
   const active = goals.filter((g) => !g.archived);
@@ -93,10 +94,7 @@ export default function GoalsPage() {
                       variant="ghost"
                       size="icon"
                       aria-label="Hapus"
-                      onClick={async () => {
-                        await deleteGoal(g.id);
-                        toast("Target dihapus", "success");
-                      }}
+                      onClick={() => setDeleteConfirm(g)}
                     >
                       <Trash2 className="size-3.5 text-expense" />
                     </Button>
@@ -176,6 +174,37 @@ export default function GoalsPage() {
         }}
       />
       <ContributeSheet goal={contributing} onClose={() => setContributing(null)} />
+
+      {/* Delete Confirmation Modal */}
+      <Sheet
+        open={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title="Hapus Target Tabungan"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            Yakin ingin menghapus target tabungan <strong>{deleteConfirm?.name}</strong>?
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="lg" className="flex-1" onClick={() => setDeleteConfirm(null)}>
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              size="lg"
+              className="flex-1"
+              onClick={async () => {
+                if (!deleteConfirm) return;
+                await deleteGoal(deleteConfirm.id);
+                toast("Target berhasil dihapus", "success");
+                setDeleteConfirm(null);
+              }}
+            >
+              Hapus
+            </Button>
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 }

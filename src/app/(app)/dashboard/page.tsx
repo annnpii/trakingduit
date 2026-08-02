@@ -78,6 +78,7 @@ export default function DashboardPage() {
   const balances = useLiveQuery(
     async () => {
       await db().transactions.count();
+      await db().wallets.count();
       return allWalletBalances();
     },
     [],

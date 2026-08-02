@@ -23,9 +23,11 @@ import { MonthSwitcher } from "@/components/layout/month-switcher";
 import { StatTile } from "@/components/ui/stat-tile";
 
 export default function BudgetsPage() {
+  const toast = useToast();
   const [month, setMonth] = React.useState(toMonthKey());
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Budget | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = React.useState<Budget | null>(null);
 
   const categories = useLiveQuery(
     () => db().categories.filter((c) => !c.deleted && c.type === "expense").toArray(),
@@ -146,7 +148,7 @@ export default function BudgetsPage() {
                       variant="ghost"
                       size="icon"
                       aria-label="Hapus"
-                      onClick={() => deleteBudget(b.id)}
+                      onClick={() => setDeleteConfirm(b)}
                     >
                       <Trash2 className="size-3.5 text-expense" />
                     </Button>
@@ -201,6 +203,37 @@ export default function BudgetsPage() {
           setEditing(null);
         }}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Sheet
+        open={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title="Hapus Budget"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            Yakin ingin menghapus budget untuk kategori <strong>{categories.find((c) => c.id === deleteConfirm?.category_id)?.name}</strong>?
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="lg" className="flex-1" onClick={() => setDeleteConfirm(null)}>
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              size="lg"
+              className="flex-1"
+              onClick={async () => {
+                if (!deleteConfirm) return;
+                await deleteBudget(deleteConfirm.id);
+                toast("Budget berhasil dihapus", "success");
+                setDeleteConfirm(null);
+              }}
+            >
+              Hapus
+            </Button>
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 }

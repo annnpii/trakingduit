@@ -1,0 +1,81 @@
+# PANDUAN SETUP GIT & WORKFLOW SYNC SYSTEM (TERMUX HP & LAPTOP)
+================================================================
+
+Tujuan: Agar kamu bisa clone project 'trakingduit' ke Termux di HP, mengedit kode di HP, 
+dan langsung push ke GitHub untuk otomatis deploy ke Vercel. Dengan begitu, kode di HP, 
+laptop, dan website live (Vercel) akan selalu sinkron di versi terupdate.
+
+----------------------------------------------------------------
+1. SETUP AWAL DI TERMUX (HP)
+----------------------------------------------------------------
+Buka aplikasi Termux di HP kamu, lalu jalankan perintah-perintah berikut:
+
+# Update package repository Termux
+pkg update && pkg upgrade -y
+
+# Install Git, Node.js dan SSH client
+pkg install git openssh nodejs-lts -y
+
+# Setup konfigurasi global Git (samakan dengan akun GitHub kamu)
+git config --global user.name "Farhan Lakoro"
+git config --global user.email "farhanlakoro.lpk@gmail.com"
+
+----------------------------------------------------------------
+2. SETUP SSH KEY DI TERMUX & PENGHUBUNGAN KE GITHUB
+----------------------------------------------------------------
+Agar kamu bisa commit & push dari HP tanpa perlu ketik username/password berulang kali:
+
+# Generate SSH Key baru di Termux
+ssh-keygen -t ed25519 -C "farhanlakoro.lpk@gmail.com"
+# (Tekan Enter saja terus jika diminta file path / passphrase)
+
+# Jalankan SSH agent dan daftarkan key-nya
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+
+# Ambil/cetak SSH public key kamu
+cat ~/.ssh/id_ed25519.pub
+
+# CARA MEMASUKKAN KEY KE GITHUB:
+1. Salin seluruh output teks dari command `cat ~/.ssh/id_ed25519.pub` di atas.
+2. Buka browser, login ke GitHub, masuk ke Settings -> SSH and GPG keys -> New SSH Key.
+3. Beri Judul (misal: "Termux HP Farhan") lalu paste teks public key tadi ke kolom "Key", klik Add SSH Key.
+
+# Test koneksi SSH ke GitHub
+ssh -T git@github.com
+# (Jika muncul konfirmasi fingerprint, ketik 'yes')
+
+----------------------------------------------------------------
+3. CLONE PROJECT KE TERMUX
+----------------------------------------------------------------
+Setelah SSH berhasil terhubung, buat folder project-mu di Termux lalu clone:
+
+# Pindah ke directory home Termux
+cd ~
+
+# Clone repository TrackingDuit kamu dari GitHub
+# Ganti repository target di bawah sesuai path github kamu yang asli:
+git clone git@github.com:FarhanLakoro/trakingduit.git
+
+# Masuk ke direktori project
+cd trakingduit
+
+----------------------------------------------------------------
+4. WORKFLOW SYNC & UPDATE WEB (HP & LAPTOP DI JAMIN SINKRON)
+----------------------------------------------------------------
+Karena website `trakingduit.vercel.app` sudah terintegrasi (linked) dengan GitHub repository, 
+kamu tidak perlu install atau konfigurasi Vercel CLI di HP kamu. Vercel akan membaca setiap 
+perubahan baru yang di-push ke branch utama (`main`/`master`) dan me-deploy-nya secara otomatis.
+
+A. Workflow ketika ingin mulai coding (baik di HP maupun Laptop):
+   Selalu biasakan jalankan perintah ini sebelum mengedit kode agar pekerjaan dari device lain ditarik:
+   $ git pull origin main
+
+B. Workflow setelah selesai edit kode (di HP / Termux):
+   $ git add .
+   $ git commit -m "feat: deskripsi perubahan kamu"
+   $ git push origin main
+
+Begitu `git push` sukses dijalankan dari HP/Termux, Vercel akan langsung mendeteksi commit baru 
+tersebut dan memulai build/deploy otomatis di cloud. Halaman website live kamu akan terupdate 
+dalam kurun waktu kurang dari 1 menit!
