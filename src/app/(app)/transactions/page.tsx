@@ -100,7 +100,7 @@ export default function TransactionsPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Cari tempat belanja, catatan, nominal…"
-              className="pl-9 w-full"
+              className="pl-9 w-full placeholder:text-xs"
             />
           </div>
           <Button
