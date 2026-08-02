@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeftRight, Trash2 } from "lucide-react";
 import { db } from "@/lib/db";
 import {
@@ -23,6 +24,7 @@ import {
   useToast,
 } from "@/components/ui";
 import { DynIcon } from "@/components/ui/icon";
+import { staggerContainer, staggerItem, getAnimation } from "@/lib/animations";
 
 export interface TransactionDraft {
   type?: TxType;
@@ -266,16 +268,32 @@ export function TransactionSheet({
           ) : null}
         </div>
 
-        {type !== "transfer" ? (
-          <div>
+        <AnimatePresence mode="wait" initial={false}>
+          {type !== "transfer" ? (
+            <motion.div
+              key="category-grid"
+              initial={getAnimation({ opacity: 0, y: 8 })}
+              animate={getAnimation({ opacity: 1, y: 0 })}
+              exit={getAnimation({ opacity: 0, y: -8 })}
+              transition={{ duration: 0.2 }}
+            >
             <span className="mb-1.5 block text-xs font-medium text-muted">Kategori</span>
-            <div className="grid grid-cols-4 gap-2">
+            <motion.div
+              className="grid grid-cols-4 gap-2"
+              variants={getAnimation(staggerContainer)}
+              initial="hidden"
+              animate="visible"
+            >
               {typeCats.map((c) => {
                 const active = c.id === categoryId;
                 return (
-                  <button
+                  <motion.button
                     key={c.id}
+                    variants={getAnimation(staggerItem)}
                     onClick={() => setCategoryId(active ? "" : c.id)}
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.94 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 25 }}
                     className={cn(
                       "flex flex-col items-center gap-1 rounded-xl border px-1.5 py-2 text-[10px] leading-tight transition",
                       active
@@ -283,23 +301,33 @@ export function TransactionSheet({
                         : "border-border bg-surface-2 text-muted hover:text-fg",
                     )}
                   >
-                    <span
+                    <motion.span
                       className="grid size-7 place-items-center rounded-lg"
                       style={{ background: `${c.color}22`, color: c.color }}
+                      animate={active ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+                      transition={{ duration: 0.3 }}
                     >
                       <DynIcon name={c.icon} className="size-3.5" />
-                    </span>
+                    </motion.span>
                     <span className="line-clamp-2 text-center">{c.name}</span>
-                  </button>
+                  </motion.button>
                 );
               })}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         ) : (
-          <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-xs text-muted">
+          <motion.div
+            key="transfer-note"
+            initial={getAnimation({ opacity: 0, y: 8 })}
+            animate={getAnimation({ opacity: 1, y: 0 })}
+            exit={getAnimation({ opacity: 0, y: -8 })}
+            transition={{ duration: 0.2 }}
+            className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-xs text-muted"
+          >
             <ArrowLeftRight className="size-4" /> Transfer tidak memengaruhi total pemasukan/pengeluaran
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Tanggal">

@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
+import { motion, AnimatePresence } from "framer-motion";
+import { getAnimation } from "@/lib/animations";
 import {
   Bell,
   CalendarClock,
@@ -167,16 +169,36 @@ function NavLink({
   active: boolean;
 }) {
   return (
-    <Link
-      href={href}
-      className={cn(
-        "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition",
-        active ? "bg-brand/10 font-medium text-brand" : "text-muted hover:bg-surface-2 hover:text-fg",
-      )}
+    <motion.span
+      layout
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ type: "spring", stiffness: 400, damping: 28 }}
     >
-      <Icon className="size-4" />
-      {label}
-    </Link>
+      <Link
+        href={href}
+        className={cn(
+          "relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition",
+          active ? "font-medium text-brand" : "text-muted hover:bg-surface-2 hover:text-fg",
+        )}
+      >
+        {active ? (
+          <motion.span
+            layoutId="sidebar-pill"
+            className="absolute inset-0 rounded-xl bg-brand/10"
+            transition={{ type: "spring", stiffness: 500, damping: 35 }}
+          />
+        ) : null}
+        <motion.span
+          className="relative"
+          animate={active ? { scale: 1.1 } : { scale: 1 }}
+          transition={{ type: "spring", stiffness: 500, damping: 20 }}
+        >
+          <Icon className="size-4" />
+        </motion.span>
+        <span className="relative">{label}</span>
+      </Link>
+    </motion.span>
   );
 }
 
@@ -191,7 +213,20 @@ function TopBar({ unread }: { unread: number }) {
         <Link href="/dashboard" className="flex items-center gap-2 lg:hidden">
           <BrandMark />
         </Link>
-        <h1 className="flex-1 truncate text-base font-semibold lg:text-lg">{title}</h1>
+        <h1 className="flex-1 truncate text-base font-semibold lg:text-lg">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={title}
+              className="inline-block"
+              initial={getAnimation({ opacity: 0, y: 10 })}
+              animate={getAnimation({ opacity: 1, y: 0 })}
+              exit={getAnimation({ opacity: 0, y: -10 })}
+              transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+            >
+              {title}
+            </motion.span>
+          </AnimatePresence>
+        </h1>
         <button
           onClick={toggle}
           aria-label="Ganti tema"
@@ -227,13 +262,21 @@ function BottomNav({ pathname, onAdd }: { pathname: string; onAdd: () => void })
           <TabItem key={item.href} {...item} active={pathname.startsWith(item.href)} />
         ))}
         <div className="flex justify-center">
-          <button
+          <motion.button
             onClick={onAdd}
             aria-label="Catat transaksi"
             className="-mt-6 grid size-14 place-items-center rounded-full bg-[linear-gradient(135deg,#e8600c,#ff7a00)] text-white shadow-lg shadow-orange-500/30 transition active:scale-95"
+            whileHover={{ scale: 1.08, rotate: 6 }}
+            whileTap={{ scale: 0.9, rotate: -3 }}
+            transition={{ type: "spring", stiffness: 500, damping: 20 }}
           >
-            <Plus className="size-6" />
-          </button>
+            <motion.span
+              animate={{ rotate: [0, 90, 0] }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+              <Plus className="size-6" />
+            </motion.span>
+          </motion.button>
         </div>
         {right.map((item) => (
           <TabItem key={item.href} {...item} active={pathname.startsWith(item.href)} />
@@ -258,12 +301,35 @@ function TabItem({
     <Link
       href={href}
       className={cn(
-        "flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] transition",
+        "relative flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] transition",
         active ? "text-brand" : "text-muted",
       )}
     >
-      <Icon className="size-5" />
-      {label}
+      {active ? (
+        <motion.span
+          layoutId="bottom-tab-pill"
+          className="absolute -top-0.5 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-brand"
+          transition={{ type: "spring", stiffness: 500, damping: 35 }}
+        />
+      ) : null}
+      <motion.span
+        className="relative"
+        animate={
+          active
+            ? { y: -2, scale: 1.12 }
+            : { y: 0, scale: 1 }
+        }
+        transition={{ type: "spring", stiffness: 500, damping: 20 }}
+      >
+        <Icon className="size-5" />
+      </motion.span>
+      <motion.span
+        className="relative"
+        animate={active ? { opacity: 1 } : { opacity: 0.7 }}
+        transition={{ duration: 0.2 }}
+      >
+        {label}
+      </motion.span>
     </Link>
   );
 }

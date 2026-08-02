@@ -1,8 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { motion, AnimatePresence, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { X, Eye, EyeOff } from "lucide-react";
+import { sheetOverlay, sheetContent, getAnimation } from "@/lib/animations";
 
 /* ----------------------------------- Card ---------------------------------- */
 
@@ -65,27 +67,55 @@ export function Button({
   disabled,
   children,
   ...props
-}: React.ComponentProps<"button"> & {
+}: Omit<HTMLMotionProps<"button">, "onAnimationStart" | "onDragStart" | "onDragEnd" | "onDrag"> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
+  children?: React.ReactNode;
 }) {
+  const isDisabled = disabled || loading;
   return (
-    <button
+    <motion.button
       className={cn(
-        "inline-flex cursor-pointer items-center justify-center rounded-full font-medium transition active:scale-[0.97]",
+        "inline-flex cursor-pointer items-center justify-center rounded-full font-medium transition",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
         "disabled:pointer-events-none disabled:opacity-50",
         VARIANTS[variant],
         SIZES[size],
         className,
       )}
-      disabled={disabled || loading}
+      disabled={isDisabled}
+      whileHover={getAnimation({ scale: 1.02 })}
+      whileTap={getAnimation({ scale: 0.96 })}
+      transition={{ type: "spring", stiffness: 500, damping: 30 }}
       {...props}
     >
-      {loading ? <Spinner className="size-4" /> : null}
-      {children}
-    </button>
+      <AnimatePresence mode="popLayout" initial={false}>
+        {loading ? (
+          <motion.span
+            key="spinner"
+            initial={{ opacity: 0, scale: 0.5, rotate: -90 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            exit={{ opacity: 0, scale: 0.5, rotate: 90 }}
+            transition={{ duration: 0.2 }}
+            className="inline-flex"
+          >
+            <Spinner className="size-4" />
+          </motion.span>
+        ) : (
+          <motion.span
+            key="content"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+            className="inline-flex items-center justify-center gap-2"
+          >
+            {children}
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </motion.button>
   );
 }
 
@@ -211,43 +241,53 @@ export function Sheet({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
-        onClick={onClose}
-        aria-hidden
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        className={cn(
-          "animate-rise relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl border border-border bg-surface shadow-(--shadow-pop) sm:rounded-2xl",
-          size === "lg" ? "sm:max-w-2xl" : "sm:max-w-md",
-        )}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
-          <div>
-            <h3 className="text-base font-semibold">{title}</h3>
-            {description ? <p className="mt-0.5 text-xs text-muted">{description}</p> : null}
-          </div>
-          <button
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+          <motion.div
+            className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
             onClick={onClose}
-            className="-mr-1 rounded-lg p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
-            aria-label="Tutup"
+            aria-hidden
+            variants={getAnimation(sheetOverlay)}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          />
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label={title}
+            className={cn(
+              "relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl border border-border bg-surface shadow-(--shadow-pop) sm:rounded-2xl",
+              size === "lg" ? "sm:max-w-2xl" : "sm:max-w-md",
+            )}
+            variants={getAnimation(sheetContent)}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
           >
-            <X className="size-4" />
-          </button>
+            <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+              <div>
+                <h3 className="text-base font-semibold">{title}</h3>
+                {description ? <p className="mt-0.5 text-xs text-muted">{description}</p> : null}
+              </div>
+              <button
+                onClick={onClose}
+                className="-mr-1 rounded-lg p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
+                aria-label="Tutup"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="safe-b flex-1 overflow-y-auto px-5 py-4">{children}</div>
+            {footer ? (
+              <div className="safe-b border-t border-border bg-surface px-5 py-3">{footer}</div>
+            ) : null}
+          </motion.div>
         </div>
-        <div className="safe-b flex-1 overflow-y-auto px-5 py-4">{children}</div>
-        {footer ? (
-          <div className="safe-b border-t border-border bg-surface px-5 py-3">{footer}</div>
-        ) : null}
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -267,16 +307,51 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col items-center px-6 py-12 text-center", className)}>
+    <motion.div
+      className={cn("flex flex-col items-center px-6 py-12 text-center", className)}
+      initial={getAnimation({ opacity: 0, y: 16 })}
+      animate={getAnimation({ opacity: 1, y: 0 })}
+      transition={{ type: "spring", stiffness: 300, damping: 25 }}
+    >
       {Icon ? (
-        <div className="mb-3 rounded-2xl border border-border bg-surface-2 p-3 text-muted">
+        <motion.div
+          className="mb-3 rounded-2xl border border-border bg-surface-2 p-3 text-muted"
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.1 }}
+        >
           <Icon className="size-6" />
-        </div>
+        </motion.div>
       ) : null}
-      <p className="text-sm font-medium">{title}</p>
-      {description ? <p className="mt-1 max-w-xs text-xs text-muted">{description}</p> : null}
-      {action ? <div className="mt-4">{action}</div> : null}
-    </div>
+      <motion.p
+        className="text-sm font-medium"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+      >
+        {title}
+      </motion.p>
+      {description ? (
+        <motion.p
+          className="mt-1 max-w-xs text-xs text-muted"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          {description}
+        </motion.p>
+      ) : null}
+      {action ? (
+        <motion.div
+          className="mt-4"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >
+          {action}
+        </motion.div>
+      ) : null}
+    </motion.div>
   );
 }
 
@@ -297,11 +372,14 @@ export function Progress({
     warn: "bg-warn",
     income: "bg-income",
   } as const;
+  const pct = Math.min(100, Math.max(0, value));
   return (
     <div className={cn("h-2 w-full overflow-hidden rounded-full bg-surface-2", className)}>
-      <div
-        className={cn("h-full rounded-full transition-all duration-500", colors[tone])}
-        style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+      <motion.div
+        className={cn("h-full rounded-full", colors[tone])}
+        initial={{ width: 0 }}
+        animate={{ width: `${pct}%` }}
+        transition={{ type: "spring", stiffness: 120, damping: 20 }}
       />
     </div>
   );
@@ -335,11 +413,18 @@ export function SegmentedControl<T extends string>({
           aria-selected={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "flex-1 cursor-pointer rounded-lg px-3 py-1.5 transition",
-            value === o.value ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg",
+            "relative flex-1 cursor-pointer rounded-lg px-3 py-1.5 transition",
+            value === o.value ? "text-fg" : "text-muted hover:text-fg",
           )}
         >
-          {o.label}
+          {value === o.value ? (
+            <motion.span
+              layoutId={`segmented-${o.value}`}
+              className="absolute inset-0 rounded-lg bg-surface shadow-sm"
+              transition={{ type: "spring", stiffness: 500, damping: 35 }}
+            />
+          ) : null}
+          <span className="relative z-10">{o.label}</span>
         </button>
       ))}
     </div>
@@ -367,21 +452,28 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={push}>
       {children}
       <div className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex flex-col items-center gap-2 px-4 sm:bottom-6">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={cn(
-              "animate-rise pointer-events-auto max-w-sm rounded-xl border px-4 py-2.5 text-sm shadow-lg",
-              t.tone === "success"
-                ? "border-income/30 bg-income/10 text-income"
-                : t.tone === "error"
-                  ? "border-expense/30 bg-expense/10 text-expense"
-                  : "border-border bg-surface text-fg",
-            )}
-          >
-            {t.message}
-          </div>
-        ))}
+        <AnimatePresence mode="popLayout">
+          {toasts.map((t) => (
+            <motion.div
+              key={t.id}
+              layout
+              initial={{ opacity: 0, y: 24, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -12, scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              className={cn(
+                "pointer-events-auto max-w-sm rounded-xl border px-4 py-2.5 text-sm shadow-lg",
+                t.tone === "success"
+                  ? "border-income/30 bg-income/10 text-income"
+                  : t.tone === "error"
+                    ? "border-expense/30 bg-expense/10 text-expense"
+                    : "border-border bg-surface text-fg",
+              )}
+            >
+              {t.message}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </ToastContext.Provider>
   );
@@ -412,34 +504,52 @@ export function BalanceCard({
   className?: string;
 }) {
   return (
-    <div
+    <motion.div
       className={cn(
         "relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#003d7a,#0072c6)] p-5 text-white shadow-lg shadow-brand/30",
         className,
       )}
+      initial={getAnimation({ opacity: 0, y: 16, scale: 0.98 })}
+      animate={getAnimation({ opacity: 1, y: 0, scale: 1 })}
+      transition={{ type: "spring", stiffness: 300, damping: 25 }}
     >
-      <div
+      <motion.div
         className="pointer-events-none absolute -top-16 -right-12 size-48 rounded-full opacity-20 blur-3xl"
         style={{ background: "#7cc4ff" }}
+        animate={{ x: [0, -12, 0], y: [0, 8, 0] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
       />
       <div className="relative">
         <div className="flex items-center gap-2 text-[13px] font-medium text-white/85">
           {label}
           {onToggleHide ? (
-            <button
+            <motion.button
               type="button"
               onClick={onToggleHide}
               aria-label={hidden ? "Liat nominal" : "Sembunyiin nominal"}
               className="text-white/80 transition hover:text-white"
+              whileTap={{ scale: 0.85 }}
+              whileHover={{ scale: 1.1 }}
             >
-              {hidden ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            </button>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={hidden ? "off" : "on"}
+                  className="inline-flex"
+                  initial={{ opacity: 0, rotate: -90, scale: 0.5 }}
+                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                  exit={{ opacity: 0, rotate: 90, scale: 0.5 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {hidden ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </motion.span>
+              </AnimatePresence>
+            </motion.button>
           ) : null}
         </div>
         <p className="num mt-1 text-3xl font-bold tracking-tight sm:text-4xl">{value}</p>
         {sub ? <div className="mt-2 text-xs text-white/80">{sub}</div> : null}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -525,16 +635,23 @@ export function MenuTile({
     accent: "bg-accent/10 text-accent",
   } as const;
   return (
-    <div
+    <motion.div
       className={cn(
-        "flex cursor-pointer flex-col items-center gap-2 rounded-2xl bg-surface p-3 shadow-(--shadow-card) transition active:scale-[0.96]",
+        "flex cursor-pointer flex-col items-center gap-2 rounded-2xl bg-surface p-3 shadow-(--shadow-card) transition",
         className,
       )}
+      whileHover={{ y: -3, scale: 1.03 }}
+      whileTap={{ scale: 0.94 }}
+      transition={{ type: "spring", stiffness: 400, damping: 20 }}
     >
-      <span className={cn("grid size-11 place-items-center rounded-2xl", tones[tone])}>
+      <motion.span
+        className={cn("grid size-11 place-items-center rounded-2xl", tones[tone])}
+        whileHover={{ scale: 1.08, rotate: 3 }}
+        transition={{ type: "spring", stiffness: 500, damping: 20 }}
+      >
         <Icon className="size-5" />
-      </span>
+      </motion.span>
       <span className="text-[11px] font-medium text-fg">{label}</span>
-    </div>
+    </motion.div>
   );
 }
