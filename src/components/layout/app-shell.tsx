@@ -72,6 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const shouldReduceMotion = useReducedMotion();
   const yBg1 = useTransform(scrollY, [0, 1000], [0, shouldReduceMotion ? 0 : 150]);
   const yBg2 = useTransform(scrollY, [0, 1000], [0, shouldReduceMotion ? 0 : -100]);
+  const yGrid = useTransform(scrollY, [0, 1000], [0, shouldReduceMotion ? 0 : 40]);
 
   React.useEffect(() => {
     if (status === "signed-out") router.replace("/login");
@@ -104,7 +105,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         {/* Layered grid dots pattern moving slower */}
         <motion.div
-          style={{ y: useTransform(scrollY, [0, 1000], [0, shouldReduceMotion ? 0 : 40]) }}
+          style={{ y: yGrid }}
           className="absolute inset-0 bg-grid-pattern opacity-70"
         />
         <motion.div 
