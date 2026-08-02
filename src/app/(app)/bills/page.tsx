@@ -174,7 +174,7 @@ export default function BillsPage() {
               <Card key={b.id} className={cn("p-3 sm:p-4 flex flex-col justify-between", b.archived && "opacity-60")}>
                 <div>
                   <div className="flex items-start justify-between gap-1 sm:gap-3">
-                    <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
                       <span
                         className={cn(
                           "grid size-7 sm:size-10 shrink-0 place-items-center rounded-full text-xs sm:text-base",
@@ -183,14 +183,14 @@ export default function BillsPage() {
                       >
                         <CalendarClock className="size-3.5 sm:size-4.5" />
                       </span>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="truncate text-xs sm:text-sm font-semibold leading-tight">{b.name}</p>
                         <p className="text-[9px] sm:text-[11px] text-muted truncate mt-0.5">
                           {formatDate(b.due_date)} {!b.is_installment && `· ${REPEAT_LABEL[b.repeat]}`}
                         </p>
                       </div>
                     </div>
-                    <div className="flex shrink-0">
+                    <div className="hidden sm:flex shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -258,18 +258,41 @@ export default function BillsPage() {
                 </div>
 
                 {!b.archived && !(b.is_installment && remainingPayments <= 0) ? (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="mt-2.5 w-full text-[10px] sm:text-xs h-7 sm:h-8"
-                    onClick={async () => {
-                      await payBill(b.id);
-                      toast(`${b.name} ditandai lunas`, "success");
-                    }}
-                  >
-                    <Check className="size-3 sm:size-3.5" /> Lunas
-                    {b.auto_create_tx ? " + catat" : ""}
-                  </Button>
+                  <div className="mt-2.5 flex gap-1.5">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="flex-1 text-[10px] sm:text-xs h-7 sm:h-8"
+                      onClick={async () => {
+                        await payBill(b.id);
+                        toast(`${b.name} ditandai lunas`, "success");
+                      }}
+                    >
+                      <Check className="size-3 sm:size-3.5" /> Lunas
+                      {b.auto_create_tx ? " + catat" : ""}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="sm:hidden size-7"
+                      aria-label="Edit"
+                      onClick={() => {
+                        setEditing(b);
+                        setOpen(true);
+                      }}
+                    >
+                      <Pencil className="size-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="sm:hidden size-7"
+                      aria-label="Hapus"
+                      onClick={() => setDeleteConfirm(b)}
+                    >
+                      <Trash2 className="size-3 text-expense" />
+                    </Button>
+                  </div>
                 ) : null}
               </Card>
             );
