@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Download, ListOrdered, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { Download, ListOrdered, Plus, Search, SlidersHorizontal, X, ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 import { db } from "@/lib/db";
 import { totals } from "@/lib/analytics";
 import type { Transaction, TxType } from "@/lib/types";
@@ -54,6 +54,53 @@ export default function TransactionsPage() {
 
   const t = totals(filtered);
   const activeFilters = [walletId, categoryId, query, type !== "all" ? type : ""].filter(Boolean).length;
+
+  // Pagination states & clamp
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+
+  React.useEffect(() => {
+    setCurrentPage((prev) => Math.min(Math.max(1, prev), totalPages));
+  }, [filtered.length, totalPages]);
+
+  const paginatedTransactions = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filtered.slice(startIndex, startIndex + itemsPerPage);
+  }, [filtered, currentPage]);
+
+  function getPaginationRange(current: number, total: number) {
+    const siblings = 1;
+    const range: (number | "ellipsis")[] = [];
+
+    if (total <= 5) {
+      for (let i = 1; i <= total; i++) range.push(i);
+      return range;
+    }
+
+    range.push(1);
+
+    const leftSiblingIdx = Math.max(current - siblings, 2);
+    const rightSiblingIdx = Math.min(current + siblings, total - 1);
+
+    const shouldShowLeftEllipsis = leftSiblingIdx > 2;
+    const shouldShowRightEllipsis = rightSiblingIdx < total - 1;
+
+    if (shouldShowLeftEllipsis) {
+      range.push("ellipsis");
+    }
+
+    for (let i = leftSiblingIdx; i <= rightSiblingIdx; i++) {
+      range.push(i);
+    }
+
+    if (shouldShowRightEllipsis) {
+      range.push("ellipsis");
+    }
+
+    range.push(total);
+    return range;
+  }
 
   function exportCsv() {
     const csv = toCSV(filtered, wallets, categories);
@@ -175,14 +222,71 @@ export default function TransactionsPage() {
         </Card>
       </div>
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden flex flex-col">
         {filtered.length ? (
-          <TransactionList
-            transactions={filtered}
-            categories={categories}
-            wallets={wallets}
-            onSelect={setEditing}
-          />
+          <>
+            <TransactionList
+              transactions={paginatedTransactions}
+              categories={categories}
+              wallets={wallets}
+              onSelect={setEditing}
+            />
+
+            {totalPages > 1 && (
+              <nav aria-label="pagination" className="flex w-full justify-center border-t border-border bg-surface px-4 py-3">
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 rounded-lg"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    aria-label="Halaman sebelumnya"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </Button>
+
+                  {getPaginationRange(currentPage, totalPages).map((page, idx) => {
+                    if (page === "ellipsis") {
+                      return (
+                        <span
+                          key={`ellipsis-${idx}`}
+                          className="flex h-8 w-8 items-center justify-center text-muted"
+                        >
+                          <MoreHorizontal className="size-4" />
+                        </span>
+                      );
+                    }
+
+                    const isCurrent = page === currentPage;
+                    return (
+                      <Button
+                        key={page}
+                        variant={isCurrent ? "primary" : "ghost"}
+                        size="sm"
+                        className="h-8 w-8 p-0 rounded-lg text-xs"
+                        onClick={() => setCurrentPage(page)}
+                        aria-current={isCurrent ? "page" : undefined}
+                      >
+                        {page}
+                      </Button>
+                    );
+                  })}
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 rounded-lg"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    aria-label="Halaman berikutnya"
+                  >
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </div>
+              </nav>
+            )}
+          </>
         ) : (
           <EmptyState
             icon={ListOrdered}

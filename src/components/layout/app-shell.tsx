@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import { getAnimation } from "@/lib/animations";
 import {
   Bell,
@@ -68,6 +68,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [addOpen, setAddOpen] = React.useState(false);
 
+  const { scrollY } = useScroll();
+  const shouldReduceMotion = useReducedMotion();
+  const yBg1 = useTransform(scrollY, [0, 1000], [0, shouldReduceMotion ? 0 : 150]);
+  const yBg2 = useTransform(scrollY, [0, 1000], [0, shouldReduceMotion ? 0 : -100]);
+
   React.useEffect(() => {
     if (status === "signed-out") router.replace("/login");
   }, [status, router]);
@@ -94,7 +99,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (status === "locked") return <LockScreen />;
 
   return (
-    <div className="flex min-h-dvh">
+    <div className="relative flex min-h-dvh overflow-x-hidden">
+      {/* Parallax Background Layer */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <motion.div 
+          style={{ y: yBg1 }}
+          className="absolute -top-[10%] -left-[10%] h-[400px] w-[400px] rounded-full bg-brand/5 blur-[100px] dark:bg-brand/3 sm:h-[600px] sm:w-[600px] sm:blur-[120px]"
+        />
+        <motion.div 
+          style={{ y: yBg2 }}
+          className="absolute top-[40%] -right-[10%] h-[350px] w-[350px] rounded-full bg-[rgba(232,96,12,0.05)] blur-[80px] dark:bg-[rgba(232,96,12,0.025)] sm:h-[500px] sm:w-[500px] sm:blur-[100px]"
+        />
+      </div>
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border bg-surface px-3 py-4 lg:flex">
         <Link href="/dashboard" className="mb-6 flex items-center gap-2 px-2">
