@@ -119,20 +119,23 @@ export default function DashboardPage() {
 
   const mask = (n: number) => (hideBalance ? "••••••" : formatIDR(n));
   
-  // Use display_name if available, otherwise use name
-  const displayName = profile?.display_name?.trim() || profile?.name?.trim() || "Kawan";
+  // Use display_name if available, otherwise use name, remove email domain if present
+  const rawName = profile?.display_name?.trim() || profile?.name?.trim() || "Kawan";
+  const displayName = rawName.includes("@") ? rawName.split("@")[0] : rawName;
 
   return (
     <div className="space-y-4">
       {/* Greeting + month switcher - more compact */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-lg font-semibold tracking-tight leading-tight">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-base sm:text-lg font-semibold tracking-tight leading-tight">
             Hai, {displayName} 👋
           </p>
-          <p className="mt-0.5 text-xs text-muted">Gimana duit lo hari ini?</p>
+          <p className="mt-0.5 text-[11px] sm:text-xs text-muted">Gimana duit lo hari ini?</p>
         </div>
-        <MonthSwitcher value={month} onChange={setMonth} className="shrink-0" />
+        <div className="flex items-center justify-start sm:justify-end w-full sm:w-auto shrink-0">
+          <MonthSwitcher value={month} onChange={setMonth} />
+        </div>
       </div>
 
       {/* Balance hero */}
