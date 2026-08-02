@@ -95,6 +95,11 @@ export interface Bill extends Syncable {
   last_paid_at?: ISOTime;
   auto_create_tx: 0 | 1;
   archived: 0 | 1;
+  // Installment fields
+  is_installment?: 0 | 1;
+  installment_total?: number; // Total cicilan (e.g., 8x)
+  installment_paid?: number; // Sudah bayar berapa kali (e.g., 0)
+  installment_amount_per_period?: number; // Nominal per periode (e.g., 1.170.000)
 }
 
 export interface ParsedReceipt {

@@ -253,25 +253,43 @@ export async function deleteBill(id: ID) {
 export async function payBill(billId: ID, walletId?: ID) {
   const bill = await db().bills.get(billId);
   if (!bill) return;
+
+  const actualAmount = bill.is_installment ? (bill.installment_amount_per_period ?? bill.amount) : bill.amount;
+
   if (bill.auto_create_tx && (walletId || bill.wallet_id)) {
     await createTransaction({
       type: "expense",
-      amount: bill.amount,
+      amount: actualAmount,
       wallet_id: (walletId ?? bill.wallet_id)!,
       category_id: bill.category_id,
       date: toDateKey(),
-      note: `Bayar tagihan: ${bill.name}`,
+      note: bill.is_installment 
+        ? `Bayar cicilan: ${bill.name} (Ke-${(bill.installment_paid ?? 0) + 1} dari ${bill.installment_total ?? 1})`
+        : `Bayar tagihan: ${bill.name}`,
       merchant: bill.name,
-      tags: ["tagihan"],
+      tags: ["tagihan", bill.is_installment ? "cicilan" : ""].filter(Boolean),
       source: "manual",
     });
   }
+
   const next = nextDueDate(bill);
-  await updateBill(billId, {
-    last_paid_at: nowISO(),
-    due_date: next ?? bill.due_date,
-    archived: next ? 0 : 1,
-  });
+  
+  if (bill.is_installment) {
+    const paidTimes = (bill.installment_paid ?? 0) + 1;
+    const isCompleted = paidTimes >= (bill.installment_total ?? 1);
+    await updateBill(billId, {
+      last_paid_at: nowISO(),
+      due_date: isCompleted ? bill.due_date : (next ?? bill.due_date),
+      installment_paid: paidTimes,
+      archived: isCompleted ? 1 : 0,
+    });
+  } else {
+    await updateBill(billId, {
+      last_paid_at: nowISO(),
+      due_date: next ?? bill.due_date,
+      archived: next ? 0 : 1,
+    });
+  }
 }
 
 export function nextDueDate(bill: Bill): string | undefined {

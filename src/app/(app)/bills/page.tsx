@@ -151,76 +151,115 @@ export default function BillsPage() {
       </div>
 
       {bills.length ? (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
           {bills.map((b) => {
             const days = daysBetween(today, b.due_date);
             const late = days < 0 && !b.archived;
+            
+            // Installment calculations
+            const remainingPayments = b.is_installment 
+              ? Math.max(0, (b.installment_total ?? 1) - (b.installment_paid ?? 0))
+              : 0;
+            const remainingAmount = remainingPayments * (b.installment_amount_per_period ?? b.amount);
+
             return (
-              <Card key={b.id} className={cn("p-4", b.archived && "opacity-60")}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span
-                      className={cn(
-                        "grid size-10 shrink-0 place-items-center rounded-full",
-                        late ? "bg-expense/10 text-expense" : "bg-warn/10 text-warn",
-                      )}
-                    >
-                      <CalendarClock className="size-4.5" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{b.name}</p>
-                      <p className="text-[11px] text-muted">
-                        {formatDate(b.due_date)} · {REPEAT_LABEL[b.repeat]}
-                      </p>
+              <Card key={b.id} className={cn("p-3 sm:p-4 flex flex-col justify-between", b.archived && "opacity-60")}>
+                <div>
+                  <div className="flex items-start justify-between gap-1 sm:gap-3">
+                    <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
+                      <span
+                        className={cn(
+                          "grid size-7 sm:size-10 shrink-0 place-items-center rounded-full text-xs sm:text-base",
+                          late ? "bg-expense/10 text-expense" : "bg-warn/10 text-warn",
+                        )}
+                      >
+                        <CalendarClock className="size-3.5 sm:size-4.5" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-xs sm:text-sm font-semibold leading-tight">{b.name}</p>
+                        <p className="text-[9px] sm:text-[11px] text-muted truncate mt-0.5">
+                          {formatDate(b.due_date)} {!b.is_installment && `· ${REPEAT_LABEL[b.repeat]}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 sm:size-9"
+                        aria-label="Edit"
+                        onClick={() => {
+                          setEditing(b);
+                          setOpen(true);
+                        }}
+                      >
+                        <Pencil className="size-3 sm:size-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 sm:size-9"
+                        aria-label="Hapus"
+                        onClick={() => setDeleteConfirm(b)}
+                      >
+                        <Trash2 className="size-3 sm:size-3.5 text-expense" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Edit"
-                      onClick={() => {
-                        setEditing(b);
-                        setOpen(true);
-                      }}
+
+                  {b.is_installment && (
+                    <div className="mt-2 rounded-lg bg-surface-2 p-1.5 text-[9px] sm:text-[11px] text-muted space-y-0.5 border border-border/40">
+                      <div className="flex justify-between font-medium">
+                        <span>Cicilan ke-</span>
+                        <span className="text-fg font-semibold">
+                          {(b.installment_paid ?? 0)}/{b.installment_total ?? 1}x
+                        </span>
+                      </div>
+                      {remainingPayments > 0 ? (
+                        <>
+                          <div className="flex justify-between">
+                            <span>Sisa tenor:</span>
+                            <span className="text-fg font-medium">{remainingPayments}x lagi</span>
+                          </div>
+                          <div className="flex justify-between border-t border-border/40 pt-0.5 mt-0.5 text-brand">
+                            <span>Sisa utang:</span>
+                            <span className="font-semibold">{formatIDR(remainingAmount)}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center text-income font-medium pt-0.5">Lunas! 🎉</div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="mt-2.5 flex items-center justify-between flex-wrap gap-1">
+                    <span className="num text-sm sm:text-lg font-bold">{formatIDR(b.amount)}</span>
+                    <Badge 
+                      className="text-[9px] sm:text-[11px] px-1 sm:px-2 py-0"
+                      tone={b.archived ? "neutral" : late ? "expense" : days <= 3 ? "warn" : "brand"}
                     >
-                      <Pencil className="size-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Hapus"
-                      onClick={() => setDeleteConfirm(b)}
-                    >
-                      <Trash2 className="size-3.5 text-expense" />
-                    </Button>
+                      {b.archived
+                        ? "Selesai"
+                        : late
+                          ? `Telat ${Math.abs(days)}h`
+                          : days === 0
+                            ? "Hari ini"
+                            : `${days}h lagi`}
+                    </Badge>
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="num text-lg font-semibold">{formatIDR(b.amount)}</span>
-                  <Badge tone={b.archived ? "neutral" : late ? "expense" : days <= 3 ? "warn" : "brand"}>
-                    {b.archived
-                      ? "Selesai"
-                      : late
-                        ? `Telat ${Math.abs(days)} hari`
-                        : days === 0
-                          ? "Hari ini"
-                          : `${days} hari lagi`}
-                  </Badge>
-                </div>
-
-                {!b.archived ? (
+                {!b.archived && !(b.is_installment && remainingPayments <= 0) ? (
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="mt-3 w-full"
+                    className="mt-2.5 w-full text-[10px] sm:text-xs h-7 sm:h-8"
                     onClick={async () => {
                       await payBill(b.id);
                       toast(`${b.name} ditandai lunas`, "success");
                     }}
                   >
-                    <Check className="size-3.5" /> Tandai lunas
+                    <Check className="size-3 sm:size-3.5" /> Lunas
                     {b.auto_create_tx ? " + catat" : ""}
                   </Button>
                 ) : null}
@@ -324,6 +363,11 @@ function BillSheet({
   const [walletId, setWalletId] = React.useState("");
   const [categoryId, setCategoryId] = React.useState("");
   const [autoTx, setAutoTx] = React.useState(true);
+  
+  // Installment states
+  const [isInstallment, setIsInstallment] = React.useState(false);
+  const [instalmentTotal, setInstalmentTotal] = React.useState("12");
+  const [instalmentPaid, setInstalmentPaid] = React.useState("0");
 
   React.useEffect(() => {
     if (!open) return;
@@ -335,26 +379,34 @@ function BillSheet({
     setWalletId(bill?.wallet_id ?? wallets[0]?.id ?? "");
     setCategoryId(bill?.category_id ?? "");
     setAutoTx(bill ? Boolean(bill.auto_create_tx) : true);
+    setIsInstallment(bill ? Boolean(bill.is_installment) : false);
+    setInstalmentTotal(String(bill?.installment_total ?? "12"));
+    setInstalmentPaid(String(bill?.installment_paid ?? "0"));
   }, [open, bill, wallets]);
 
   async function save() {
     const value = parseAmount(amount);
     if (!name.trim() || value <= 0) return;
-    const payload = {
+    const totalPeriods = Number(instalmentTotal) || 1;
+    const payload: Partial<Bill> = {
       name: name.trim(),
       amount: value,
       due_date: dueDate,
-      repeat,
+      repeat: isInstallment ? "monthly" : repeat,
       reminder_days: Number(reminderDays) || 0,
       wallet_id: walletId || undefined,
       category_id: categoryId || undefined,
       auto_create_tx: (autoTx ? 1 : 0) as 0 | 1,
+      is_installment: (isInstallment ? 1 : 0) as 0 | 1,
+      installment_total: isInstallment ? totalPeriods : undefined,
+      installment_paid: isInstallment ? (Number(instalmentPaid) || 0) : undefined,
+      installment_amount_per_period: isInstallment ? value : undefined,
     };
     if (bill) {
       await updateBill(bill.id, payload);
       toast("Tagihan diperbarui", "success");
     } else {
-      await createBill({ ...payload, archived: 0 });
+      await createBill({ ...payload, archived: 0 } as any);
       toast("Tagihan ditambahkan", "success");
     }
     onClose();
@@ -380,8 +432,30 @@ function BillSheet({
             placeholder="cth. Listrik PLN"
           />
         </Field>
+
+        <div className="flex gap-4">
+          <label className="flex flex-1 items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
+            <input
+              type="checkbox"
+              checked={!isInstallment}
+              onChange={() => setIsInstallment(false)}
+              className="size-4 accent-[var(--brand)]"
+            />
+            <span className="text-xs font-semibold">Tipe Tagihan Biasa</span>
+          </label>
+          <label className="flex flex-1 items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
+            <input
+              type="checkbox"
+              checked={isInstallment}
+              onChange={() => setIsInstallment(true)}
+              className="size-4 accent-[var(--brand)]"
+            />
+            <span className="text-xs font-semibold">Tipe Cicilan</span>
+          </label>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Nominal">
+          <Field label={isInstallment ? "Nominal per bulan" : "Nominal"}>
             <Input
               inputMode="numeric"
               value={amount}
@@ -393,18 +467,41 @@ function BillSheet({
               placeholder="0"
             />
           </Field>
-          <Field label="Jatuh tempo">
+          <Field label={isInstallment ? "Mulai bayar" : "Jatuh tempo"}>
             <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </Field>
-          <Field label="Pengulangan">
-            <Select value={repeat} onChange={(e) => setRepeat(e.target.value as Bill["repeat"])}>
-              {Object.entries(REPEAT_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </Select>
-          </Field>
+
+          {isInstallment ? (
+            <>
+              <Field label="Tenor (Bulan)">
+                <Input
+                  inputMode="numeric"
+                  value={instalmentTotal}
+                  onChange={(e) => setInstalmentTotal(e.target.value.replace(/\D/g, ""))}
+                  placeholder="12"
+                />
+              </Field>
+              <Field label="Sudah dibayar (kali)">
+                <Input
+                  inputMode="numeric"
+                  value={instalmentPaid}
+                  onChange={(e) => setInstalmentPaid(e.target.value.replace(/\D/g, ""))}
+                  placeholder="0"
+                />
+              </Field>
+            </>
+          ) : (
+            <Field label="Pengulangan">
+              <Select value={repeat} onChange={(e) => setRepeat(e.target.value as Bill["repeat"])}>
+                {Object.entries(REPEAT_LABEL).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
+
           <Field label="Ingatkan (hari sebelum)">
             <Input
               inputMode="numeric"
