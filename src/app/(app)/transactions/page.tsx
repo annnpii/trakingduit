@@ -68,34 +68,51 @@ export default function TransactionsPage() {
           <p className="text-xs text-muted">Semua catatan bulan ini</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={exportCsv} aria-label="Ekspor CSV">
+          <Button variant="ghost" size="icon" onClick={exportCsv} aria-label="Ekspor CSV" className="size-9">
             <Download className="size-4" />
           </Button>
-          <Button onClick={() => setAdding(true)} className="hidden sm:inline-flex">
-            <Plus className="size-4" /> Catat transaksi
+          <Button onClick={() => setAdding(true)} className="sm:px-4 px-2.5 h-9 sm:h-10">
+            <Plus className="size-4" />
+            <span className="hidden sm:inline">Catat transaksi</span>
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <MonthSwitcher value={month} onChange={setMonth} />
-        <div className="relative min-w-40 flex-1">
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari tempat belanja, catatan, nominal…"
-            className="pl-9"
-          />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+        <div className="flex items-center justify-between gap-2 w-full sm:w-auto">
+          <div className="flex-1 sm:flex-none">
+            <MonthSwitcher value={month} onChange={setMonth} />
+          </div>
+          <Button
+            variant={showFilters || activeFilters ? "secondary" : "ghost"}
+            size="icon"
+            onClick={() => setShowFilters((v) => !v)}
+            aria-label="Filter"
+            className="sm:hidden size-9"
+          >
+            <SlidersHorizontal className="size-4" />
+          </Button>
         </div>
-        <Button
-          variant={showFilters || activeFilters ? "secondary" : "ghost"}
-          size="icon"
-          onClick={() => setShowFilters((v) => !v)}
-          aria-label="Filter"
-        >
-          <SlidersHorizontal className="size-4" />
-        </Button>
+        <div className="flex items-center gap-2 w-full">
+          <div className="relative flex-1">
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cari tempat belanja, catatan, nominal…"
+              className="pl-9 w-full"
+            />
+          </div>
+          <Button
+            variant={showFilters || activeFilters ? "secondary" : "ghost"}
+            size="icon"
+            onClick={() => setShowFilters((v) => !v)}
+            aria-label="Filter"
+            className="hidden sm:inline-flex size-9"
+          >
+            <SlidersHorizontal className="size-4" />
+          </Button>
+        </div>
       </div>
 
       {showFilters ? (
