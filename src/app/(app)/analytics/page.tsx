@@ -79,14 +79,27 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight">Analitik</h1>
-          <p className="text-xs text-muted">Grafik pemasukan dan pengeluaran</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between w-full sm:w-auto">
+          <div className="min-w-0">
+            <h1 className="text-lg font-semibold tracking-tight">Analitik</h1>
+            <p className="text-xs text-muted">Grafik pemasukan dan pengeluaran</p>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={exportCsv} 
+            aria-label="Ekspor CSV"
+            className="sm:hidden size-9"
+          >
+            <Download className="size-4" />
+          </Button>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <MonthSwitcher value={month} onChange={setMonth} />
-          <div className="flex gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex-1 sm:flex-none">
+            <MonthSwitcher value={month} onChange={setMonth} />
+          </div>
+          <div className="flex items-center gap-2">
             <SegmentedControl
               value={scope}
               onChange={setScope}
@@ -95,7 +108,13 @@ export default function AnalyticsPage() {
                 { value: "income", label: "Masuk" },
               ]}
             />
-            <Button variant="ghost" size="icon" onClick={exportCsv} aria-label="Ekspor CSV">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={exportCsv} 
+              aria-label="Ekspor CSV"
+              className="hidden sm:inline-flex size-9"
+            >
               <Download className="size-4" />
             </Button>
           </div>
