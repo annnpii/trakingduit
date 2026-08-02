@@ -145,6 +145,7 @@ export interface Settings {
 export interface UserProfile {
   id: ID;
   name: string;
+  display_name?: string; // Display name untuk greeting (editable by user)
   email?: string;
   avatar_color: string;
   /** 6 digit PIN hash for local-only mode. */

@@ -23,25 +23,25 @@ export function MonthSwitcher({
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1 rounded-xl border border-border bg-surface p-1",
+        "inline-flex items-center gap-0.5 rounded-lg border border-border bg-surface px-1 py-0.5",
         className,
       )}
     >
       <button
         onClick={() => onChange(addMonths(value, -1))}
         aria-label="Bulan sebelumnya"
-        className="rounded-lg p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
+        className="rounded-md p-1 text-muted transition hover:bg-surface-2 hover:text-fg"
       >
-        <ChevronLeft className="size-4" />
+        <ChevronLeft className="size-3.5" />
       </button>
-      <span className="min-w-30 text-center text-xs font-medium">{monthLabel(value)}</span>
+      <span className="min-w-28 px-1 text-center text-xs font-medium">{monthLabel(value)}</span>
       <button
         onClick={() => onChange(addMonths(value, 1))}
         disabled={isCurrent}
         aria-label="Bulan berikutnya"
-        className="rounded-lg p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg disabled:opacity-30"
+        className="rounded-md p-1 text-muted transition hover:bg-surface-2 hover:text-fg disabled:opacity-30"
       >
-        <ChevronRight className="size-4" />
+        <ChevronRight className="size-3.5" />
       </button>
     </div>
   );

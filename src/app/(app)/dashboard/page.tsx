@@ -8,25 +8,24 @@ import {
   ArrowUpRight,
   CalendarClock,
   ChartPie,
-  ChevronRight,
   ListOrdered,
   ScanLine,
   Sparkles,
   Target,
   TrendingDown,
   Wallet as WalletIcon,
+  AlertCircle,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { allWalletBalances } from "@/lib/repo";
-import { inMonth, totals } from "@/lib/analytics";
-import type { Transaction } from "@/lib/types";
-import { cn, formatIDR, monthRange, pct, toMonthKey } from "@/lib/utils";
+import { totals } from "@/lib/analytics";
+import type { Bill, Transaction } from "@/lib/types";
+import { cn, formatIDR, monthRange, toDateKey, toMonthKey } from "@/lib/utils";
 import {
   BalanceCard,
   Button,
   Card,
   CardHeader,
-  DonutProgress,
   EmptyState,
   MenuTile,
 } from "@/components/ui";
@@ -78,7 +77,7 @@ export default function DashboardPage() {
   const categories = useLiveQuery(() => db().categories.filter((c) => !c.deleted).toArray(), [], []);
   const balances = useLiveQuery(
     async () => {
-      await db().transactions.count(); // keep the query reactive to transaction writes
+      await db().transactions.count();
       return allWalletBalances();
     },
     [],
@@ -92,40 +91,45 @@ export default function DashboardPage() {
       .filter((t) => !t.deleted)
       .toArray();
   }, [month], []);
-  const budgets = useLiveQuery(
-    () => db().budgets.filter((b) => !b.deleted && b.start_date.startsWith(month)).toArray(),
-    [month],
-    [],
-  );
+
+  // Get bills for current month (upcoming & overdue)
+  const bills = useLiveQuery(() => {
+    const today = toDateKey();
+    return db()
+      .bills.filter((b) => !b.deleted && !b.archived && b.due_date >= today)
+      .sortBy("due_date");
+  }, [], []);
 
   const t = totals(monthTx);
   const totalBalance = Object.values(balances).reduce((a, b) => a + b, 0);
+  
+  // Only show 3 most recent transactions
   const recent = React.useMemo(
     () =>
       [...monthTx]
         .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at))
-        .slice(0, 6),
+        .slice(0, 3),
     [monthTx],
   );
 
-  const budgetTotal = budgets.reduce((a, b) => a + b.amount, 0);
-  const budgetSpent = inMonth(monthTx, month)
-    .filter((tx) => tx.type === "expense" && budgets.some((b) => b.category_id === tx.category_id))
-    .reduce((a, x) => a + x.amount, 0);
-  const budgetPct = budgetTotal > 0 ? pct(budgetSpent, budgetTotal) : 0;
-  const budgetLeft = budgetTotal - budgetSpent;
+  // Only show 3 nearest bills
+  const upcomingBills = bills?.slice(0, 3) ?? [];
+  const billsTotal = upcomingBills.reduce((sum, bill) => sum + bill.amount, 0);
 
   const mask = (n: number) => (hideBalance ? "••••••" : formatIDR(n));
-  const name = profile?.name?.trim() || "Kawan";
-  const firstName = name.split(/\s+/)[0];
+  
+  // Use display_name if available, otherwise use name
+  const displayName = profile?.display_name?.trim() || profile?.name?.trim() || "Kawan";
 
   return (
-    <div className="space-y-6">
-      {/* Greeting + month switcher */}
-      <div className="flex items-center justify-between gap-3 pt-1">
-        <div className="min-w-0">
-          <p className="truncate text-lg font-semibold tracking-tight">Hai, {firstName} 👋</p>
-          <p className="text-xs text-muted">Gimana duit lo hari ini?</p>
+    <div className="space-y-4">
+      {/* Greeting + month switcher - more compact */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-lg font-semibold tracking-tight leading-tight">
+            Hai, {displayName} 👋
+          </p>
+          <p className="mt-0.5 text-xs text-muted">Gimana duit lo hari ini?</p>
         </div>
         <MonthSwitcher value={month} onChange={setMonth} className="shrink-0" />
       </div>
@@ -154,7 +158,7 @@ export default function DashboardPage() {
       />
 
       {/* Quick menu */}
-      <section className="grid grid-cols-4 gap-3">
+      <section className="grid grid-cols-4 gap-2.5">
         {QUICK.map((a) => (
           <Link key={a.href} href={a.href} className="block">
             <MenuTile icon={a.icon} label={a.label} tone={a.tone} className="h-full" />
@@ -162,81 +166,62 @@ export default function DashboardPage() {
         ))}
       </section>
 
-      {/* Budget ring */}
-      <Card className="p-5">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-base font-semibold tracking-tight">Budget bulan ini</h3>
-          <Link href="/budgets" className="text-xs font-medium text-brand hover:underline">
-            Atur
+      {/* Bills section - replaced Budget */}
+      <Card className="p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold tracking-tight">Tagihan</h3>
+          <Link href="/bills" className="text-xs font-medium text-brand hover:underline">
+            Kelola
           </Link>
         </div>
-        {budgets.length ? (
-          <div className="mt-4 flex items-center gap-5">
-            <DonutProgress
-              value={budgetPct}
-              centerLabel={`${Math.round(budgetPct)}%`}
-              centerSub="terpakai"
-              tone={budgetPct >= 100 ? "expense" : budgetPct >= 80 ? "warn" : "brand"}
-              className="shrink-0"
-            />
-            <div className="min-w-0 flex-1 space-y-3">
-              <StatRow label="Total" value={mask(budgetTotal)} />
-              <StatRow label="Terpakai" value={mask(budgetSpent)} tone="expense" />
-              <StatRow
-                label="Sisa"
-                value={mask(Math.max(0, budgetLeft))}
-                tone={budgetLeft >= 0 ? "income" : "expense"}
-              />
+        {upcomingBills.length > 0 ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2">
+              <span className="text-xs text-muted">Total tagihan</span>
+              <span className="num text-sm font-semibold">{mask(billsTotal)}</span>
             </div>
+            <div className="space-y-2">
+              {upcomingBills.map((bill) => (
+                <BillItem key={bill.id} bill={bill} mask={mask} />
+              ))}
+            </div>
+            <p className="text-center text-xs text-muted">3 tagihan terdekat</p>
           </div>
         ) : (
           <EmptyState
-            icon={TrendingDown}
-            title="Belum set budget"
-            description="Bikin budget biar pengeluaran ke-track."
-            action={
-              <Link href="/budgets">
-                <Button size="sm">Bikin budget</Button>
-              </Link>
-            }
+            icon={CalendarClock}
+            title="Belum ada tagihan"
+            description="Tambahkan tagihan melalui halaman Tagihan."
+            className="py-6"
           />
         )}
       </Card>
 
-      {/* Recent transactions */}
+      {/* Recent transactions - max 3, no "Lihat Semua" button */}
       <Card className="overflow-hidden">
-        <CardHeader
-          title="Transaksi terakhir"
-          action={
-            <Link
-              href="/transactions"
-              className="flex items-center gap-0.5 text-xs font-medium text-brand hover:underline"
-            >
-              Lihat Semua <ChevronRight className="size-3" />
-            </Link>
-          }
-        />
+        <CardHeader title="Transaksi Terakhir" className="px-4 pt-4" />
         <div className="mt-2">
-          {recent.length ? (
-            <TransactionList
-              transactions={recent}
-              categories={categories}
-              wallets={wallets}
-              onSelect={setEditing}
-            />
+          {recent.length > 0 ? (
+            <>
+              <TransactionList
+                transactions={recent}
+                categories={categories}
+                wallets={wallets}
+                onSelect={setEditing}
+              />
+              <p className="px-4 pb-3 pt-2 text-center text-xs text-muted">
+                3 transaksi terbaru
+              </p>
+            </>
           ) : (
-            <EmptyState
-              icon={ListOrdered}
-              title="Belum ada transaksi"
-              description="Tap tombol + buat catat transaksi pertama."
-              action={
-                <Link href="/scan">
-                  <Button variant="secondary" size="sm">
-                    <ScanLine className="size-4" /> Scan struk
-                  </Button>
-                </Link>
-              }
-            />
+            <div className="px-4 pb-4">
+              <EmptyState
+                icon={ListOrdered}
+                title="Belum ada transaksi"
+                description="Tambahkan transaksi pertama melalui tombol (+) atau halaman Transaksi."
+                className="py-6"
+              />
+            </div>
           )}
         </div>
       </Card>
@@ -250,20 +235,49 @@ export default function DashboardPage() {
   );
 }
 
-function StatRow({
-  label,
-  value,
-  tone = "fg",
-}: {
-  label: string;
-  value: React.ReactNode;
-  tone?: "fg" | "income" | "expense";
-}) {
-  const tones = { fg: "text-fg", income: "text-income", expense: "text-expense" } as const;
+function BillItem({ bill, mask }: { bill: Bill; mask: (n: number) => string }) {
+  const today = toDateKey();
+  const isToday = bill.due_date === today;
+  const isOverdue = bill.due_date < today;
+  const isPaid = !!bill.last_paid_at && bill.last_paid_at >= bill.due_date;
+
+  const status = isPaid
+    ? { label: "Lunas", color: "text-income" }
+    : isOverdue
+      ? { label: "Terlambat", color: "text-expense" }
+      : isToday
+        ? { label: "Jatuh tempo hari ini", color: "text-warn" }
+        : { label: "Belum dibayar", color: "text-muted" };
+
   return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-xs text-muted">{label}</span>
-      <span className={cn("num text-sm font-semibold", tones[tone])}>{value}</span>
+    <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+      <div
+        className={cn(
+          "grid size-9 shrink-0 place-items-center rounded-lg",
+          isOverdue ? "bg-expense/10" : isToday ? "bg-warn/10" : "bg-surface-2",
+        )}
+      >
+        <AlertCircle
+          className={cn(
+            "size-4",
+            isOverdue ? "text-expense" : isToday ? "text-warn" : "text-muted",
+          )}
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{bill.name}</p>
+        <p className={cn("text-xs", status.color)}>{status.label}</p>
+      </div>
+      <div className="text-right">
+        <p className="num text-sm font-semibold">{mask(bill.amount)}</p>
+        <p className="text-xs text-muted">{formatDueDate(bill.due_date)}</p>
+      </div>
     </div>
   );
+}
+
+function formatDueDate(date: string): string {
+  const [year, month, day] = date.split("-").map(Number);
+  const d = new Date(year, month - 1, day);
+  return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short" }).format(d);
 }

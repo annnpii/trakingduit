@@ -69,6 +69,7 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
 
   const [name, setName] = React.useState("");
+  const [displayName, setDisplayName] = React.useState("");
   const [pin, setPin] = React.useState("");
   const [savingProfile, setSavingProfile] = React.useState(false);
   const [syncing, setSyncing] = React.useState<"sheet" | "supabase" | null>(null);
@@ -100,6 +101,7 @@ export default function SettingsPage() {
 
   React.useEffect(() => {
     setName(profile?.name ?? "");
+    setDisplayName(profile?.display_name ?? "");
   }, [profile]);
 
   React.useEffect(() => {
@@ -118,7 +120,14 @@ export default function SettingsPage() {
   async function saveProfile() {
     setSavingProfile(true);
     try {
-      const patch: Parameters<typeof updateProfile>[0] = { name: name.trim() || "Pengguna" };
+      const cleanDisplayName = displayName.trim();
+      if (cleanDisplayName && (cleanDisplayName.length < 3 || cleanDisplayName.length > 30)) {
+        throw new Error("Nama tampilan harus 3-30 karakter");
+      }
+      const patch: Parameters<typeof updateProfile>[0] = { 
+        name: name.trim() || "Pengguna",
+        display_name: cleanDisplayName || undefined,
+      };
       if (pin) {
         if (!/^\d{6}$/.test(pin)) throw new Error("PIN harus 6 digit angka");
         patch.pin_hash = await hashPin(pin);
@@ -187,6 +196,16 @@ export default function SettingsPage() {
         <div className="grid gap-3 p-4 sm:grid-cols-2">
           <Field label="Nama">
             <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </Field>
+          <Field 
+            label="Nama Tampilan" 
+            hint="Nama lengkap yang ditampilkan di dashboard (3-30 karakter)"
+          >
+            <Input 
+              value={displayName} 
+              onChange={(e) => setDisplayName(e.target.value)} 
+              placeholder="Kosongkan untuk pakai Nama"
+            />
           </Field>
           <Field
             label="PIN 6 digit"
