@@ -119,7 +119,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
       const uid = data.user?.id ?? newId();
       const existing = await db().profile.get(PROFILE_ID);
-      if (existing?.supabase_user_id && existing.supabase_user_id !== uid) {
+      if (mode === "login" || (existing?.supabase_user_id && existing.supabase_user_id !== uid)) {
         await resetAll();
       }
       const row: UserProfile = {

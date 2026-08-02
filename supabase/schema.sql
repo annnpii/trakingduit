@@ -162,6 +162,17 @@ create table if not exists ocr_receipts (
   deleted smallint not null default 0
 );
 
+-- -------------------------------------------------------------------- salaries
+create table if not exists salaries (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  month text not null,
+  amount numeric(16, 2) not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  deleted smallint not null default 0
+);
+
 -- --------------------------------------------------------------- notifications
 create table if not exists notifications (
   id uuid primary key default gen_random_uuid(),
@@ -216,7 +227,7 @@ declare
 begin
   foreach t in array array[
     'profiles', 'wallets', 'categories', 'transactions',
-    'budgets', 'saving_goals', 'bills', 'ocr_receipts', 'notifications'
+    'budgets', 'saving_goals', 'bills', 'ocr_receipts', 'notifications', 'salaries'
   ]
   loop
     execute format('drop trigger if exists %I_set_updated_at on %I', t, t);
@@ -236,6 +247,7 @@ alter table budgets enable row level security;
 alter table saving_goals enable row level security;
 alter table bills enable row level security;
 alter table ocr_receipts enable row level security;
+alter table salaries enable row level security;
 alter table notifications enable row level security;
 alter table sync_logs enable row level security;
 alter table audit_logs enable row level security;
@@ -250,7 +262,7 @@ declare
 begin
   foreach t in array array[
     'wallets', 'categories', 'transactions', 'budgets', 'saving_goals',
-    'bills', 'ocr_receipts', 'notifications', 'sync_logs', 'audit_logs'
+    'bills', 'ocr_receipts', 'notifications', 'sync_logs', 'audit_logs', 'salaries'
   ]
   loop
     execute format('drop policy if exists "own rows" on %I', t);

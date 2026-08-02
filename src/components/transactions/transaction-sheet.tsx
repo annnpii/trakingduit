@@ -342,7 +342,7 @@ export function TransactionSheet({
               value={merchant}
               onChange={(e) => setMerchant(e.target.value)}
               placeholder="cth. Indomaret"
-              className="text-xs sm:text-sm placeholder:text-[11px] py-1.5 px-2"
+              className="text-xs sm:text-sm placeholder:text-[10px] sm:placeholder:text-xs py-1.5 px-2"
             />
           </Field>
         </div>

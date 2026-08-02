@@ -220,19 +220,19 @@ export default function BillsPage() {
             const remainingAmount = remainingPayments * (b.installment_amount_per_period ?? b.amount);
 
             return (
-              <Card key={b.id} className={cn("p-2.5 sm:p-4 flex flex-col justify-between", b.archived && "opacity-60")}>
+              <Card key={b.id} className={cn("p-2.5 sm:p-4 flex flex-col justify-between relative", b.archived && "opacity-60")}>
                 <div>
                   <div className="flex items-start justify-between gap-1 sm:gap-3">
                     <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-3">
                       <span
                         className={cn(
-                          "hidden xs:grid size-7 sm:size-10 shrink-0 place-items-center rounded-full text-xs sm:text-base",
+                          "hidden sm:grid size-7 sm:size-10 shrink-0 place-items-center rounded-full text-xs sm:text-base",
                           late ? "bg-expense/10 text-expense" : "bg-warn/10 text-warn",
                         )}
                       >
                         <CalendarClock className="size-3.5 sm:size-4.5" />
                       </span>
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 pr-10 sm:pr-0">
                         <p className="text-xs sm:text-sm font-semibold leading-tight break-words line-clamp-2">{b.name}</p>
                         <p className="text-[9px] sm:text-[11px] text-muted truncate mt-0.5">
                           {formatDate(b.due_date)} {!b.is_installment && `· ${REPEAT_LABEL[b.repeat]}`}
@@ -262,6 +262,31 @@ export default function BillsPage() {
                         <Trash2 className="size-3 sm:size-3.5 text-expense" />
                       </Button>
                     </div>
+                  </div>
+
+                  {/* Mobile-only absolute buttons at top right */}
+                  <div className="absolute right-1 top-1.5 flex sm:hidden gap-0.5">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-6 text-muted hover:text-fg"
+                      aria-label="Edit"
+                      onClick={() => {
+                        setEditing(b);
+                        setOpen(true);
+                      }}
+                    >
+                      <Pencil className="size-3 lg:size-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-6 text-muted hover:text-expense"
+                      aria-label="Hapus"
+                      onClick={() => setDeleteConfirm(b)}
+                    >
+                      <Trash2 className="size-3 text-expense" />
+                    </Button>
                   </div>
 
                   {b.is_installment && (
@@ -306,12 +331,12 @@ export default function BillsPage() {
                   </div>
                 </div>
 
-                {!b.archived && !(b.is_installment && remainingPayments <= 0) ? (
-                  <div className="mt-2.5 flex items-center gap-1 w-full justify-between">
+                <div className="mt-2.5 w-full">
+                  {!b.archived && !(b.is_installment && remainingPayments <= 0) ? (
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="flex-1 text-[10px] sm:text-xs h-7 sm:h-8 px-1.5 min-w-0"
+                      className="w-full text-[10px] sm:text-xs h-7 sm:h-8 px-1.5"
                       onClick={async () => {
                         await payBill(b.id);
                         toast(`${b.name} ditandai lunas`, "success");
@@ -319,31 +344,8 @@ export default function BillsPage() {
                     >
                       <Check className="size-3 shrink-0 mr-0.5" /> <span className="truncate">Lunas{b.auto_create_tx ? " + catat" : ""}</span>
                     </Button>
-                    <div className="flex shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 sm:hidden"
-                        aria-label="Edit"
-                        onClick={() => {
-                          setEditing(b);
-                          setOpen(true);
-                        }}
-                      >
-                        <Pencil className="size-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 sm:hidden"
-                        aria-label="Hapus"
-                        onClick={() => setDeleteConfirm(b)}
-                      >
-                        <Trash2 className="size-3.5 text-expense" />
-                      </Button>
-                    </div>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </Card>
             );
           })}
@@ -513,7 +515,6 @@ function BillSheet({
       <div className="space-y-4">
         <Field label="Nama tagihan">
           <Input
-            autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="cth. Listrik PLN"

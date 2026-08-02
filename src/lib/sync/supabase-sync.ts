@@ -17,6 +17,7 @@ const TABLES = [
   { remote: "budgets", local: () => db().budgets },
   { remote: "saving_goals", local: () => db().goals },
   { remote: "bills", local: () => db().bills },
+  { remote: "salaries", local: () => db().salaries },
 ] as const;
 
 export interface SupabaseSyncResult {

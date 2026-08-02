@@ -153,6 +153,7 @@ export interface UserProfile {
   display_name?: string; // Display name untuk greeting (editable by user)
   email?: string;
   avatar_color: string;
+  avatar_url?: string;
   /** 6 digit PIN hash for local-only mode. */
   pin_hash?: string;
   supabase_user_id?: string;

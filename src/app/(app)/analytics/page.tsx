@@ -5,17 +5,15 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { ChartPie, Download, TrendingDown, TrendingUp, Sparkles } from "lucide-react";
 import { db } from "@/lib/db";
 import {
-  averageDailySpend,
   byCategory,
   byWeekday,
   dailySeries,
   monthlySeries,
   recentMonths,
-  savingsRate,
   topMerchants,
   totals,
 } from "@/lib/analytics";
-import { downloadFile, formatIDR, monthRange, pct, toMonthKey } from "@/lib/utils";
+import { downloadFile, formatIDR, monthRange, pct, toMonthKey, cn } from "@/lib/utils";
 import { toCSV } from "@/lib/export";
 import { Button, Card, CardHeader, EmptyState, SegmentedControl } from "@/components/ui";
 import { StatTile } from "@/components/ui/stat-tile";
@@ -42,6 +40,7 @@ const WeekdayChart = dynamic(() =>
 export default function AnalyticsPage() {
   const [month, setMonth] = React.useState(toMonthKey());
   const [scope, setScope] = React.useState<"expense" | "income">("expense");
+  const [chartTab, setChartTab] = React.useState<"daily" | "trends" | "details">("daily");
 
   const categories = useLiveQuery(() => db().categories.filter((c) => !c.deleted).toArray(), [], []);
   const wallets = useLiveQuery(() => db().wallets.filter((w) => !w.deleted).toArray(), [], []);
@@ -69,18 +68,35 @@ export default function AnalyticsPage() {
   const monthly = React.useMemo(() => monthlySeries(halfYearTx, months), [halfYearTx, months]);
   const weekday = React.useMemo(() => byWeekday(monthTx), [monthTx]);
   const merchants = React.useMemo(() => topMerchants(monthTx), [monthTx]);
-  const rate = savingsRate(t);
+
+  const totalBalance = React.useMemo(() => {
+    let balance = 0;
+    for (const w of wallets) {
+      if (w.archived) continue;
+      balance += w.initial_balance;
+    }
+    for (const tx of allTx) {
+      if (tx.type === "income") balance += tx.amount;
+      else if (tx.type === "expense") balance -= tx.amount;
+    }
+    return balance;
+  }, [wallets, allTx]);
 
   const finHealth = React.useMemo(() => {
     const income = t.income;
     const expense = t.expense;
+    const net = t.net;
+    
+    // total saldo di dompet
+    const balance = totalBalance;
+
     if (income === 0) {
       if (expense > 0) {
         return {
-          score: 0,
+          score: Math.max(0, Math.min(100, Math.round(Number(balance > expense) * 30))),
           status: "Buruk",
           tone: "expense" as const,
-          description: "Waduh, boncos total! Belum ada pemasukan tapi pengeluaran jalan terus. Yuk rem dulu belanjanya!",
+          description: `Waduh, boncos total! Lo belum ada pemasukan tapi pengeluaran udah ${formatIDR(expense)} (${balance < 0 ? "saldo total minus!" : `sisa saldo total: ${formatIDR(balance)}`}). Yuk rem dulu jajannya!`,
         };
       }
       return {
@@ -91,30 +107,49 @@ export default function AnalyticsPage() {
       };
     }
 
-    const ratio = expense / income;
-    let score = Math.round((1 - ratio) * 100);
-    if (score < 0) score = 0;
+    const expenseRatio = expense / income;
+    const savingRatio = net / income; // rasio nabung
+    const expensePercent = Math.round(expenseRatio * 100);
+
+    // Skor dasar dari rasio menabung
+    let score = Math.round(savingRatio * 100);
+    // mapping -100% -> 0%, 0% -> 50%, 100% -> 100%
+    if (score < -50) score = -50;
+    let finalScore = Math.round(((score + 50) / 150) * 100);
+    
+    // Sesuaikan skor berdasarkan total saldo
+    if (balance > expense * 3) {
+      finalScore += 10; // Bonus punya dana darurat aman untuk 3 bulan
+    } else if (balance < expense) {
+      finalScore -= 15; // Penalty saldo total tipis dibanding pengeluaran
+    }
+    
+    finalScore = Math.max(0, Math.min(100, finalScore));
 
     let status = "Buruk";
     let tone: "neutral" | "income" | "expense" | "brand" = "expense";
-    let description = "Waduh, kondisi kritis! Pengeluaran lo udah ugal-ugalan atau sisa duit lo minus. Waktunya ngerem checkout keranjang!";
+    let description = "";
 
-    if (score >= 80) {
+    if (finalScore >= 80) {
       status = "Sangat Baik";
       tone = "income";
-      description = "Gokil! Gaya hidup lo hemat banget bulan ini. Sisa duit aman buat nabung atau investasi. Pertahanin terus!";
-    } else if (score >= 60) {
+      description = `Gokil! Pengeluaran lo cuma ${expensePercent}% dari pemasukan. Sisa duit lo yang disimpen mencapai ${Math.round(savingRatio * 100)}%. Total saldo lo saat ini aman ${formatIDR(balance)}. Mantap bener, pertahanin terus!`;
+    } else if (finalScore >= 60) {
       status = "Baik";
       tone = "income";
-      description = "Keuangan lo aman terkendali. Sisa tabungan masih ok, tapi tetep kontrol jajan boba biar kaga boncos akhir bulan.";
-    } else if (score >= 40) {
+      description = `Keuangan lo dalam kondisi sehat. Pengeluaran makan ${expensePercent}% pemasukan. Masih ada sisa tabungan dan saldo lo safe di angka ${formatIDR(balance)}. Kontrol terus impulsive buying lo!`;
+    } else if (finalScore >= 40) {
       status = "Cukup";
       tone = "brand";
-      description = "Dompet lo mulai sesak nih. Pengeluaran udah makan separuh pemasukan lo. Kurangin impulsive buying ya!";
+      description = `Dompet lo mulai tipis nih. Jajan boba & checkout keranjang udah nelan ${expensePercent}% pemasukan. Saldo tersisa ${formatIDR(balance)}. Kurang-kurangin shopping yang kaga penting ya!`;
+    } else {
+      status = "Buruk";
+      tone = "expense";
+      description = `Waduh, kondisi kritis! Pengeluaran udah ugal-ugalan makan hingga ${expensePercent}% pemasukan. Duit tersisa makin tiris di angka ${formatIDR(balance)}. Saatnya rem total sebelum boncos kuadrat!`;
     }
 
-    return { score, status, tone, description };
-  }, [t.income, t.expense]);
+    return { score: finalScore, status, tone, description };
+  }, [t.income, t.expense, t.net, totalBalance]);
 
   function exportCsv() {
     const { from, to } = monthRange(month);
@@ -127,7 +162,7 @@ export default function AnalyticsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center justify-between w-full sm:w-auto">
           <div className="min-w-0">
-            <h1 className="text-lg font-semibold tracking-tight">Analitik</h1>
+            <h1 className="text-lg font-semibold tracking-tight">Analisis</h1>
             <p className="text-xs text-muted">Grafik pemasukan dan pengeluaran</p>
           </div>
           <Button 
@@ -209,88 +244,103 @@ export default function AnalyticsPage() {
 
       {t.count ? (
         <>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader title="Masuk-keluar harian" subtitle={monthLabel(month)} />
-              <div className="px-2 pt-2 pb-3">
-                <DailyFlowChart data={daily} />
-              </div>
-            </Card>
-            <Card>
-              <CardHeader
-                title={`${scope === "expense" ? "Keluar kemana aja" : "Masuk dari mana aja"}`}
-                subtitle={`${slices.length} kategori`}
-              />
-              <div className="px-2 pt-2 pb-3">
-                <CategoryDonut data={slices} />
-              </div>
-            </Card>
-          </div>
+          <SegmentedControl
+            value={chartTab}
+            onChange={(v) => setChartTab(v as "daily" | "trends" | "details")}
+            options={[
+              { value: "daily", label: "Harian" },
+              { value: "trends", label: "Tren 6 Bulan" },
+              { value: "details", label: "Detail" },
+            ]}
+            className="w-full sm:w-auto"
+          />
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader title="Perbandingan 6 bulan" subtitle="Masuk vs keluar" />
-              <div className="px-2 pt-2 pb-3">
-                <MonthlyCompareChart data={monthly} />
-              </div>
-            </Card>
-            <Card>
-              <CardHeader title="Tren sisa bulanan" subtitle="Masuk - keluar" />
-              <div className="px-2 pt-2 pb-3">
-                <NetTrendChart data={monthly} />
-              </div>
-            </Card>
-          </div>
+          {chartTab === "daily" && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card>
+                <CardHeader title="Masuk-keluar harian" subtitle={monthLabel(month)} />
+                <div className="px-2 pt-2 pb-3">
+                  <DailyFlowChart data={daily} />
+                </div>
+              </Card>
+              <Card>
+                <CardHeader
+                  title={`${scope === "expense" ? "Keluar kemana aja" : "Masuk dari mana aja"}`}
+                  subtitle={`${slices.length} kategori`}
+                />
+                <div className="px-2 pt-2 pb-3">
+                  <CategoryDonut data={slices} />
+                </div>
+              </Card>
+            </div>
+          )}
 
-          <div className="grid items-start gap-4 lg:grid-cols-3">
-            <Card className="lg:col-span-2">
-              <CardHeader title="Keluar per hari" subtitle="Pola mingguan" />
-              <div className="px-2 pt-2 pb-3">
-                <WeekdayChart data={weekday} />
-              </div>
-            </Card>
+          {chartTab === "trends" && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card>
+                <CardHeader title="Perbandingan 6 bulan" subtitle="Masuk vs keluar" />
+                <div className="px-2 pt-2 pb-3">
+                  <MonthlyCompareChart data={monthly} />
+                </div>
+              </Card>
+              <Card>
+                <CardHeader title="Tren sisa bulanan" subtitle="Masuk - keluar" />
+                <div className="px-2 pt-2 pb-3">
+                  <NetTrendChart data={monthly} />
+                </div>
+              </Card>
+              <Card className="lg:col-span-2">
+                <CardHeader title="Keluar per hari" subtitle="Pola mingguan" />
+                <div className="px-2 pt-2 pb-3">
+                  <WeekdayChart data={weekday} />
+                </div>
+              </Card>
+            </div>
+          )}
 
-            <Card>
-              <CardHeader title="Tempat belanja favorit" subtitle="Total belanja terbanyak" />
-              <ul className="divide-y divide-border">
-                {merchants.length ? (
-                  merchants.map((m, i) => (
-                    <li key={m.name} className="flex items-center gap-3 px-4 py-2.5">
-                      <span className="num w-5 text-xs text-muted">{i + 1}</span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm">{m.name}</span>
-                        <span className="text-[11px] text-muted">{m.count}× transaksi</span>
-                      </span>
-                      <span className="num text-sm font-medium">{formatIDR(m.total)}</span>
+          {chartTab === "details" && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card>
+                <CardHeader title="Tempat belanja favorit" subtitle="Total belanja terbanyak" />
+                <ul className="divide-y divide-border">
+                  {merchants.length ? (
+                    merchants.map((m, i) => (
+                      <li key={m.name} className="flex items-center gap-3 px-4 py-2.5">
+                        <span className="num w-5 text-xs text-muted">{i + 1}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm">{m.name}</span>
+                          <span className="text-[11px] text-muted">{m.count}× transaksi</span>
+                        </span>
+                        <span className="num text-sm font-medium">{formatIDR(m.total)}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-4 py-6 text-center text-xs text-muted">
+                      Isi nama tempat belanja buat liat rankingnya.
                     </li>
-                  ))
-                ) : (
-                  <li className="px-4 py-6 text-center text-xs text-muted">
-                    Isi nama tempat belanja buat liat rankingnya.
-                  </li>
-                )}
-              </ul>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader title="Detail per kategori" subtitle={monthLabel(month)} />
-            <ul className="divide-y divide-border">
-              {slices.map((c) => (
-                <li key={c.category_id} className="flex items-center gap-3 px-4 py-3">
-                  <span className="size-2.5 shrink-0 rounded-full" style={{ background: c.color }} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm">{c.name}</span>
-                    <span className="text-[11px] text-muted">{c.count} transaksi</span>
-                  </span>
-                  <span className="text-right">
-                    <span className="num block text-sm font-medium">{formatIDR(c.total)}</span>
-                    <span className="text-[11px] text-muted">{pct(c.total, t[scope])}%</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
+                  )}
+                </ul>
+              </Card>
+              <Card>
+                <CardHeader title="Detail per kategori" subtitle={monthLabel(month)} />
+                <ul className="divide-y divide-border">
+                  {slices.map((c) => (
+                    <li key={c.category_id} className="flex items-center gap-3 px-4 py-3">
+                      <span className="size-2.5 shrink-0 rounded-full" style={{ background: c.color }} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm">{c.name}</span>
+                        <span className="text-[11px] text-muted">{c.count} transaksi</span>
+                      </span>
+                      <span className="text-right">
+                        <span className="num block text-sm font-medium">{formatIDR(c.total)}</span>
+                        <span className="text-[11px] text-muted">{pct(c.total, t[scope])}%</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            </div>
+          )}
         </>
       ) : (
         <Card>

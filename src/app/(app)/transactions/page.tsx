@@ -145,7 +145,7 @@ export default function TransactionsPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Cari merchant, catatan, nominal…"
-              className="pl-9 w-full text-xs sm:text-sm placeholder:text-[11px] h-9 sm:h-10"
+              className="pl-9 w-full text-xs sm:text-sm placeholder:text-[10px] sm:placeholder:text-xs h-9 sm:h-10"
             />
           </div>
           <Button

@@ -159,6 +159,34 @@ export class TrackingDuitDB extends Dexie {
         await tx.table("categories").bulkDelete(deleteIds);
       }
     });
+
+    // Version 6: convert existing salaries to deterministic IDs
+    this.version(6).upgrade(async (tx) => {
+      const salaries = await tx.table("salaries").toArray();
+      const groups = new Map<string, any[]>();
+      for (const s of salaries) {
+        if (!s.month) continue;
+        const list = groups.get(s.month) || [];
+        list.push(s);
+        groups.set(s.month, list);
+      }
+
+      for (const [month, list] of groups.entries()) {
+        const sorted = [...list].sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
+        const best = sorted[0];
+        const cleanMonth = month.replace("-", "");
+        const detId = `ca7e5a1a-0000-4000-8000-${cleanMonth.padStart(12, "0")}`;
+        
+        const oldIds = list.map((s) => s.id);
+        await tx.table("salaries").bulkDelete(oldIds);
+        
+        await tx.table("salaries").put({
+          ...best,
+          id: detId,
+          updated_at: best.updated_at || nowISO(),
+        });
+      }
+    });
   }
 }
 

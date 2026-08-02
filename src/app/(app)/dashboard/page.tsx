@@ -10,7 +10,6 @@ import {
   ChartPie,
   ListOrdered,
   ScanLine,
-  Sparkles,
   Target,
   TrendingDown,
   Wallet as WalletIcon,
@@ -47,9 +46,8 @@ const QUICK: {
   { href: "/budgets", icon: TrendingDown, label: "Budget", tone: "expense" },
   { href: "/goals", icon: Target, label: "Target", tone: "warn" },
   { href: "/bills", icon: CalendarClock, label: "Tagihan", tone: "accent" },
-  { href: "/analytics", icon: ChartPie, label: "Analitik", tone: "brand" },
+  { href: "/analytics", icon: ChartPie, label: "Analisis", tone: "brand" },
   { href: "/wallets", icon: WalletIcon, label: "Dompet", tone: "income" },
-  { href: "/insight", icon: Sparkles, label: "AI Insight", tone: "accent" },
 ];
 
 export default function DashboardPage() {

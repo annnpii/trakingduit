@@ -136,6 +136,11 @@ export function AutoSyncProvider({ children }: { children: React.ReactNode }) {
     const kick = () => scheduleNext(0);
     kickRef.current = kick;
 
+    const { registerMutationCallback } = require("@/lib/repo");
+    registerMutationCallback(() => {
+      kick();
+    });
+
     const onOnline = () => {
       failures.current = 0;
       kick();

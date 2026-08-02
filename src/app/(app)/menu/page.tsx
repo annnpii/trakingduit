@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import * as React from "react";
 import {
-  Bell,
   CalendarClock,
   ChartPie,
   ChevronRight,
@@ -10,41 +10,52 @@ import {
   LogOut,
   ScanLine,
   Settings,
-  Sparkles,
   Target,
   Wallet,
 } from "lucide-react";
 import { useSession } from "@/lib/session";
-import { Button, Card } from "@/components/ui";
+import { Button, Card, Field, Input, Sheet } from "@/components/ui";
+import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/scan", label: "Scan Nota", desc: "Foto struk, auto-catat jadi transaksi", icon: ScanLine },
   { href: "/wallets", label: "Dompet", desc: "Atur dompet, bank, & e-wallet kamu", icon: Wallet },
   { href: "/budgets", label: "Budget", desc: "Set budget, biar gak boncos", icon: CreditCard },
   { href: "/goals", label: "Target Nabung", desc: "Pantau progres menabung", icon: Target },
-  { href: "/bills", label: "Tagihan", desc: "Pengingat jatuh tempo", icon: CalendarClock },
-  { href: "/analytics", label: "Analitik", desc: "Cek tren pengeluaran kamu", icon: ChartPie },
-  { href: "/insight", label: "AI Insight", desc: "Bocoran AI buat keuangan kamu", icon: Sparkles },
-  { href: "/notifications", label: "Notifikasi", desc: "Peringatan & log sinkron", icon: Bell },
+  { href: "/bills", label: "Tagihan & Cicilan", desc: "Pengingat jatuh tempo", icon: CalendarClock },
+  { href: "/analytics", label: "Analisis", desc: "Cek tren pengeluaran kamu", icon: ChartPie },
   { href: "/settings", label: "Pengaturan", desc: "Sinkron, data, tema, PIN", icon: Settings },
 ];
 
 export default function MenuPage() {
   const { profile, signOut } = useSession();
+  const [profileOpen, setProfileOpen] = React.useState(false);
 
   return (
     <div className="space-y-4">
-      <Card className="flex items-center gap-3 p-4">
-        <span
-          className="grid size-12 place-items-center rounded-2xl text-lg font-semibold text-white"
-          style={{ background: profile?.avatar_color ?? "#0f9d76" }}
-        >
-          {(profile?.name ?? "?").slice(0, 1).toUpperCase()}
-        </span>
+      <Card 
+        className="flex items-center gap-3 p-4 cursor-pointer transition hover:bg-surface-2"
+        onClick={() => setProfileOpen(true)}
+      >
+        {profile?.avatar_url ? (
+          <img
+            src={profile.avatar_url}
+            alt={profile.name}
+            className="size-12 rounded-2xl object-cover border border-border"
+          />
+        ) : (
+          <span
+            className="grid size-12 place-items-center rounded-2xl text-lg font-semibold text-white"
+            style={{ background: profile?.avatar_color ?? "#0f9d76" }}
+          >
+            {(profile?.name ?? "?").slice(0, 1).toUpperCase()}
+          </span>
+        )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{profile?.name}</p>
           <p className="truncate text-xs text-muted">{profile?.email ?? "Mode lokal"}</p>
         </div>
+        <ChevronRight className="size-4 text-muted shrink-0" />
       </Card>
 
       <Card className="overflow-hidden">
@@ -74,8 +85,125 @@ export default function MenuPage() {
       </Button>
 
       <p className="text-center text-xs text-muted">
-        TrackingDuit v1.8.0
+        TrackingDuit v1.9.0
       </p>
+
+      <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
+  );
+}
+
+function ProfileSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { profile, updateProfile } = useSession();
+  const [name, setName] = React.useState("");
+  const [color, setColor] = React.useState("#0f9d76");
+  const [avatarUrl, setAvatarUrl] = React.useState("");
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (open && profile) {
+      setName(profile.name);
+      setColor(profile.avatar_color);
+      setAvatarUrl(profile.avatar_url ?? "");
+    }
+  }, [open, profile]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Ukuran gambar maksimal 2MB!");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setAvatarUrl(event.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    await updateProfile({
+      name: name.trim(),
+      avatar_color: color,
+      avatar_url: avatarUrl || undefined,
+    });
+    onClose();
+  };
+
+  const colors = ["#0f9d76", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444", "#ec4899", "#10b981", "#6b7280"];
+
+  return (
+    <Sheet 
+      open={open} 
+      onClose={onClose} 
+      title="Edit Profil" 
+      footer={
+        <Button className="w-full" size="lg" onClick={handleSave} disabled={!name.trim()}>
+          Simpan
+        </Button>
+      }
+    >
+      <div className="space-y-4 pt-1">
+        {/* Avatar Photo Preview */}
+        <div className="flex flex-col items-center gap-2 py-2">
+          <div className="relative">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Preview" className="size-20 rounded-2xl object-cover border border-border" />
+            ) : (
+              <div 
+                className="grid size-20 place-items-center rounded-2xl text-2xl font-bold text-white shadow-sm"
+                style={{ background: color }}
+              >
+                {(name || "?").slice(0, 1).toUpperCase()}
+              </div>
+            )}
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+              accept="image/*" 
+              className="hidden" 
+            />
+          </div>
+          <div className="flex gap-2 mt-1">
+            <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+              Pilih Foto
+            </Button>
+            {avatarUrl && (
+              <Button size="sm" variant="ghost" className="text-expense hover:bg-expense/10" onClick={() => setAvatarUrl("")}>
+                Hapus Foto
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <Field label="Nama Lengkap">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Masukkan nama..." />
+        </Field>
+
+        <Field label="Warna Profil (tanpa foto)">
+          <div className="flex flex-wrap gap-2 pt-1">
+            {colors.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                className={cn(
+                  "size-8 rounded-full border transition-all cursor-pointer",
+                  color === c ? "border-fg scale-110 ring-2 ring-brand/20" : "border-transparent opacity-80 hover:opacity-100"
+                )}
+                style={{ background: c }}
+              />
+            ))}
+          </div>
+        </Field>
+      </div>
+    </Sheet>
   );
 }

@@ -43,7 +43,7 @@ const PRIMARY_NAV = [
   { href: "/dashboard", label: "Beranda", icon: LayoutGrid },
   { href: "/transactions", label: "Transaksi", icon: ListOrdered },
   { href: "/wallets", label: "Dompet", icon: Wallet },
-  { href: "/analytics", label: "Analitik", icon: ChartPie },
+  { href: "/analytics", label: "Analisis", icon: ChartPie },
 ];
 
 const SECONDARY_NAV = [
@@ -51,7 +51,6 @@ const SECONDARY_NAV = [
   { href: "/budgets", label: "Budget", icon: CreditCard },
   { href: "/goals", label: "Target", icon: Target },
   { href: "/bills", label: "Tagihan", icon: CalendarClock },
-  { href: "/insight", label: "AI Insight", icon: Sparkles },
   { href: "/settings", label: "Pengaturan", icon: Settings },
 ];
 

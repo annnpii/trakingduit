@@ -18,6 +18,18 @@ import { newId, nowISO, toDateKey } from "./utils";
 type NewRow<T> = Omit<T, "id" | "created_at" | "updated_at" | "deleted"> &
   Partial<Pick<T & { id: ID }, "id">>;
 
+let onMutationCallback: (() => void) | null = null;
+
+export function registerMutationCallback(cb: () => void) {
+  onMutationCallback = cb;
+}
+
+export function triggerMutationSync() {
+  if (onMutationCallback) {
+    onMutationCallback();
+  }
+}
+
 function stamp<T extends object>(input: T) {
   return {
     ...input,
@@ -33,11 +45,13 @@ function stamp<T extends object>(input: T) {
 export async function createWallet(input: NewRow<Wallet>) {
   const row = stamp(input) as Wallet;
   await db().wallets.add(row);
+  triggerMutationSync();
   return row;
 }
 
 export async function updateWallet(id: ID, patch: Partial<Wallet>) {
   await db().wallets.update(id, { ...patch, updated_at: nowISO() });
+  triggerMutationSync();
 }
 
 export async function deleteWallet(id: ID) {
@@ -48,6 +62,7 @@ export async function deleteWallet(id: ID) {
     return { archived: true, txCount };
   }
   await db().wallets.update(id, { deleted: 1, updated_at: nowISO() });
+  triggerMutationSync();
   return { archived: false, txCount };
 }
 
@@ -97,15 +112,18 @@ export async function allWalletBalances(): Promise<Record<ID, number>> {
 export async function createCategory(input: NewRow<Category>) {
   const row = stamp(input) as Category;
   await db().categories.add(row);
+  triggerMutationSync();
   return row;
 }
 
 export async function updateCategory(id: ID, patch: Partial<Category>) {
   await db().categories.update(id, { ...patch, updated_at: nowISO() });
+  triggerMutationSync();
 }
 
 export async function deleteCategory(id: ID) {
   await db().categories.update(id, { deleted: 1, updated_at: nowISO() });
+  triggerMutationSync();
 }
 
 /** Best-effort category match from free text (merchant / note). */
@@ -136,15 +154,18 @@ export async function createTransaction(input: NewRow<Transaction>) {
   const row = stamp(input) as Transaction;
   await db().transactions.add(row);
   await checkBudgetAlerts(row);
+  triggerMutationSync();
   return row;
 }
 
 export async function updateTransaction(id: ID, patch: Partial<Transaction>) {
   await db().transactions.update(id, { ...patch, updated_at: nowISO() });
+  triggerMutationSync();
 }
 
 export async function deleteTransaction(id: ID) {
   await db().transactions.update(id, { deleted: 1, updated_at: nowISO() });
+  triggerMutationSync();
 }
 
 export async function transactionsInRange(from: string, to: string) {
@@ -160,15 +181,18 @@ export async function transactionsInRange(from: string, to: string) {
 export async function createBudget(input: NewRow<Budget>) {
   const row = stamp(input) as Budget;
   await db().budgets.add(row);
+  triggerMutationSync();
   return row;
 }
 
 export async function updateBudget(id: ID, patch: Partial<Budget>) {
   await db().budgets.update(id, { ...patch, updated_at: nowISO() });
+  triggerMutationSync();
 }
 
 export async function deleteBudget(id: ID) {
   await db().budgets.update(id, { deleted: 1, updated_at: nowISO() });
+  triggerMutationSync();
 }
 
 /** Fires an in-app notification when a budget crosses 80% / 100%. */
@@ -208,15 +232,18 @@ async function checkBudgetAlerts(tx: Transaction) {
 export async function createGoal(input: NewRow<SavingGoal>) {
   const row = stamp(input) as SavingGoal;
   await db().goals.add(row);
+  triggerMutationSync();
   return row;
 }
 
 export async function updateGoal(id: ID, patch: Partial<SavingGoal>) {
   await db().goals.update(id, { ...patch, updated_at: nowISO() });
+  triggerMutationSync();
 }
 
 export async function deleteGoal(id: ID) {
   await db().goals.update(id, { deleted: 1, updated_at: nowISO() });
+  triggerMutationSync();
 }
 
 export async function contributeToGoal(goalId: ID, amount: number) {
@@ -238,15 +265,18 @@ export async function contributeToGoal(goalId: ID, amount: number) {
 export async function createBill(input: NewRow<Bill>) {
   const row = stamp(input) as Bill;
   await db().bills.add(row);
+  triggerMutationSync();
   return row;
 }
 
 export async function updateBill(id: ID, patch: Partial<Bill>) {
   await db().bills.update(id, { ...patch, updated_at: nowISO() });
+  triggerMutationSync();
 }
 
 export async function deleteBill(id: ID) {
   await db().bills.update(id, { deleted: 1, updated_at: nowISO() });
+  triggerMutationSync();
 }
 
 /** Mark paid → optionally records the expense and rolls the due date forward. */
@@ -290,6 +320,7 @@ export async function payBill(billId: ID, walletId?: ID) {
       archived: next ? 0 : 1,
     });
   }
+  triggerMutationSync();
 }
 
 export function nextDueDate(bill: Bill): string | undefined {
@@ -315,15 +346,18 @@ export function nextDueDate(bill: Bill): string | undefined {
 export async function createReceipt(input: NewRow<Receipt>) {
   const row = stamp(input) as Receipt;
   await db().receipts.add(row);
+  triggerMutationSync();
   return row;
 }
 
 export async function updateReceipt(id: ID, patch: Partial<Receipt>) {
   await db().receipts.update(id, { ...patch, updated_at: nowISO() });
+  triggerMutationSync();
 }
 
 export async function deleteReceipt(id: ID) {
   await db().receipts.update(id, { deleted: 1, updated_at: nowISO() });
+  triggerMutationSync();
 }
 
 /* ------------------------------- notifications ------------------------------ */
@@ -382,16 +416,31 @@ export async function runBillReminderScan(): Promise<number> {
   return created;
 }
 
+export function getSalaryIdForMonth(month: string): string {
+  const cleanMonth = month.replace("-", ""); // e.g. "202608"
+  return `ca7e5a1a-0000-4000-8000-${cleanMonth.padStart(12, "0")}`;
+}
+
 export async function upsertSalary(month: string, amount: number) {
   const d = db();
-  const existing = await d.salaries.where("month").equals(month).first();
+  const id = getSalaryIdForMonth(month);
+  const existing = await d.salaries.get(id);
   if (existing) {
-    await d.salaries.update(existing.id, { amount, updated_at: nowISO() });
+    await d.salaries.update(id, { amount, updated_at: nowISO() });
   } else {
-    await d.salaries.add(stamp({ month, amount }));
+    await d.salaries.put({
+      id,
+      month,
+      amount,
+      created_at: nowISO(),
+      updated_at: nowISO(),
+      deleted: 0 as const,
+    });
   }
+  triggerMutationSync();
 }
 
 export async function getSalaryForMonth(month: string) {
-  return await db().salaries.where("month").equals(month).first();
+  const id = getSalaryIdForMonth(month);
+  return await db().salaries.get(id);
 }

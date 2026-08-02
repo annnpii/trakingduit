@@ -178,6 +178,16 @@ CREATE TABLE IF NOT EXISTS "public"."ocr_receipts" (
     "deleted" smallint DEFAULT 0 NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS "public"."salaries" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL PRIMARY KEY,
+    "user_id" "uuid" NOT NULL,
+    "month" "text" NOT NULL,
+    "amount" numeric(16,2) NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "deleted" smallint DEFAULT 0 NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS "public"."audit_logs" (
     "id" bigint NOT NULL PRIMARY KEY,
     "user_id" "uuid" NOT NULL,
@@ -209,6 +219,7 @@ ALTER TABLE "public"."saving_goals" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."bills" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."notifications" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."ocr_receipts" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."salaries" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."audit_logs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."sync_logs" ENABLE ROW LEVEL SECURITY;
 
@@ -222,6 +233,7 @@ DROP POLICY IF EXISTS "own rows" ON "public"."saving_goals";
 DROP POLICY IF EXISTS "own rows" ON "public"."bills";
 DROP POLICY IF EXISTS "own rows" ON "public"."notifications";
 DROP POLICY IF EXISTS "own rows" ON "public"."ocr_receipts";
+DROP POLICY IF EXISTS "own rows" ON "public"."salaries";
 DROP POLICY IF EXISTS "own rows" ON "public"."audit_logs";
 DROP POLICY IF EXISTS "own rows" ON "public"."sync_logs";
 
@@ -235,6 +247,7 @@ CREATE POLICY "own rows" ON "public"."saving_goals" USING (("user_id" = "auth"."
 CREATE POLICY "own rows" ON "public"."bills" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
 CREATE POLICY "own rows" ON "public"."notifications" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
 CREATE POLICY "own rows" ON "public"."ocr_receipts" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
+CREATE POLICY "own rows" ON "public"."salaries" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
 CREATE POLICY "own rows" ON "public"."audit_logs" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
 CREATE POLICY "own rows" ON "public"."sync_logs" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
 
@@ -248,6 +261,7 @@ DROP TRIGGER IF EXISTS "saving_goals_set_updated_at" ON "public"."saving_goals";
 DROP TRIGGER IF EXISTS "bills_set_updated_at" ON "public"."bills";
 DROP TRIGGER IF EXISTS "notifications_set_updated_at" ON "public"."notifications";
 DROP TRIGGER IF EXISTS "ocr_receipts_set_updated_at" ON "public"."ocr_receipts";
+DROP TRIGGER IF EXISTS "salaries_set_updated_at" ON "public"."salaries";
 
 CREATE TRIGGER "profiles_set_updated_at" BEFORE UPDATE ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
 CREATE TRIGGER "wallets_set_updated_at" BEFORE UPDATE ON "public"."wallets" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
@@ -258,6 +272,7 @@ CREATE TRIGGER "saving_goals_set_updated_at" BEFORE UPDATE ON "public"."saving_g
 CREATE TRIGGER "bills_set_updated_at" BEFORE UPDATE ON "public"."bills" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
 CREATE TRIGGER "notifications_set_updated_at" BEFORE UPDATE ON "public"."notifications" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
 CREATE TRIGGER "ocr_receipts_set_updated_at" BEFORE UPDATE ON "public"."ocr_receipts" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+CREATE TRIGGER "salaries_set_updated_at" BEFORE UPDATE ON "public"."salaries" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
 
 -- Add foreign keys (only if not exists)
 DO $$ BEGIN
@@ -284,5 +299,8 @@ DO $$ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'budgets_category_id_fkey') THEN
         ALTER TABLE "public"."budgets" ADD CONSTRAINT "budgets_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'salaries_user_id_fkey') THEN
+        ALTER TABLE "public"."salaries" ADD CONSTRAINT "salaries_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
     END IF;
 END $$;
