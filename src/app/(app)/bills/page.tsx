@@ -80,8 +80,8 @@ export default function BillsPage() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-        <StatTile label="Tagihan lagi jalan" value={`${active.length}`} />
-        <StatTile label="Rutin bulanan" value={mask(monthlyTotal)} tone="expense" />
+        <StatTile label="Tagihan aktif" value={`${active.length}`} />
+        <StatTile label="Bulanan" value={mask(monthlyTotal)} tone="expense" />
         <StatTile
           label="Gaji"
           value={mask(salary?.amount ?? 0)}
@@ -97,7 +97,7 @@ export default function BillsPage() {
         />
         <StatTile label="Sisa Gaji" value={mask(remainingSalary)} tone={remainingSalary >= 0 ? "income" : "expense"} />
         <StatTile label="Persentase" value={`${Math.round(salaryPercent)}%`} tone={salaryPercent > 100 ? "expense" : salaryPercent < 50 ? "income" : "brand"} />
-        <StatTile label="Jatuh tempo (minggu ini)" value={`${dueSoon.length}`} tone="brand" />
+        <StatTile label="Deadline ≤7 hari" value={`${dueSoon.length}`} tone="brand" />
       </div>
 
       {!salary && (
@@ -137,7 +137,7 @@ export default function BillsPage() {
             toast(n ? `${n} pengingat dibuat` : "Tidak ada pengingat baru", "success");
           }}
         >
-          <BellRing className="size-4" /> Cek pengingat
+          <BellRing className="size-4" /> Cek reminder
         </Button>
         <Button
           onClick={() => {
@@ -177,7 +177,7 @@ export default function BillsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label="Ubah"
+                      aria-label="Edit"
                       onClick={() => {
                         setEditing(b);
                         setOpen(true);
@@ -332,7 +332,7 @@ function BillSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title={bill ? "Ubah Tagihan" : "Tagihan Baru"}
+      title={bill ? "Edit Tagihan" : "Tagihan Baru"}
       footer={
         <Button className="w-full" size="lg" onClick={save} disabled={!name.trim() || !amount}>
           Simpan
@@ -382,7 +382,7 @@ function BillSheet({
           </Field>
           <Field label="Dompet pembayar">
             <Select value={walletId} onChange={(e) => setWalletId(e.target.value)}>
-              <option value="">—</option>
+              <option value="">-</option>
               {wallets.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}
@@ -392,7 +392,7 @@ function BillSheet({
           </Field>
           <Field label="Kategori">
             <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">—</option>
+              <option value="">-</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}

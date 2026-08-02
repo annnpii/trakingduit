@@ -89,14 +89,14 @@ export default function BudgetsPage() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Total budget" value={totalBudget} />
-        <StatTile label="Udah kepake" value={totalSpent} tone="expense" />
+        <StatTile label="Kepake" value={totalSpent} tone="expense" />
         <StatTile
-          label="Sisa budget"
+          label="Sisa"
           value={Math.max(0, totalBudget - totalSpent)}
           tone={totalSpent > totalBudget ? "expense" : "income"}
         />
         <StatTile
-          label="Sisa hari"
+          label="Hari tersisa"
           value={`${daysLeft} hari`}
           hint={
             daysLeft && totalBudget - totalSpent > 0
@@ -134,7 +134,7 @@ export default function BudgetsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label="Ubah"
+                      aria-label="Edit"
                       onClick={() => {
                         setEditing(b);
                         setOpen(true);
@@ -174,7 +174,7 @@ export default function BudgetsPage() {
           <EmptyState
             icon={CreditCard}
             title="Belum ada budget bulan ini"
-            description="Tetapkan batas pengeluaran per kategori supaya dapat peringatan saat mendekati limit."
+            description="Set batas keluar per kategori."
             action={
               <Button
                 size="sm"

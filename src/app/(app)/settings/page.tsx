@@ -56,11 +56,11 @@ const AUTO_SYNC_BADGE: Record<
   { label: string; tone: React.ComponentProps<typeof Badge>["tone"] }
 > = {
   disabled: { label: "Belum diset", tone: "neutral" },
-  local: { label: "Mode lokal", tone: "warn" },
-  idle: { label: "Tersinkron", tone: "brand" },
-  syncing: { label: "Menyinkron…", tone: "brand" },
+  local: { label: "Mode offline", tone: "warn" },
+  idle: { label: "Udah sync", tone: "brand" },
+  syncing: { label: "Lagi sync...", tone: "brand" },
   offline: { label: "Offline", tone: "warn" },
-  error: { label: "Gagal sinkron", tone: "expense" },
+  error: { label: "Gagal sync", tone: "expense" },
 };
 
 export default function SettingsPage() {
@@ -183,7 +183,7 @@ export default function SettingsPage() {
     <div className="space-y-4">
       {/* Profile */}
       <Card>
-        <CardHeader title="Profil" subtitle={profile?.email ?? "Mode lokal"} />
+        <CardHeader title="Profil" subtitle={profile?.email ?? "Mode offline"} />
         <div className="grid gap-3 p-4 sm:grid-cols-2">
           <Field label="Nama">
             <Input value={name} onChange={(e) => setName(e.target.value)} />
@@ -329,7 +329,7 @@ export default function SettingsPage() {
                   />
                   <span className="text-muted">{formatDate(l.at)}</span>
                   <span className="truncate">
-                    {l.target === "google-sheet" ? "Spreadsheet" : "Supabase"} — {l.message}
+                    {l.target === "google-sheet" ? "Spreadsheet" : "Supabase"} - {l.message}
                   </span>
                 </li>
               ))}
@@ -626,7 +626,7 @@ function CategorySheet({ open, onClose }: { open: boolean; onClose: () => void }
         {(["expense", "income"] as const).map((group) => (
           <div key={group}>
             <p className="mb-2 text-xs font-medium text-muted">
-              {group === "expense" ? "Pengeluaran" : "Pemasukan"}
+              {group === "expense" ? "Keluar" : "Masuk"}
             </p>
             <ul className="divide-y divide-border rounded-xl border border-border">
               {categories
@@ -659,7 +659,7 @@ function CategorySheet({ open, onClose }: { open: boolean; onClose: () => void }
         ))}
 
         <p className="text-xs text-muted">
-          Menghapus kategori tidak menghapus transaksinya — transaksi lama akan tampil sebagai
+          Menghapus kategori tidak menghapus transaksinya - transaksi lama akan tampil sebagai
           &quot;Tanpa kategori&quot;.
         </p>
       </div>

@@ -73,7 +73,7 @@ export default function InsightPage() {
         body: JSON.stringify({ payload: buildInsightPayload(input) }),
       });
       if (res.status === 501) {
-        toast("AI belum aktif — set ANTHROPIC_API_KEY di .env.local", "info");
+        toast("AI belum aktif - set ANTHROPIC_API_KEY di .env.local", "info");
         return;
       }
       const json = (await res.json()) as { insight?: AiInsight; model?: string; error?: string };
@@ -130,7 +130,7 @@ export default function InsightPage() {
 
           {ai.actions.length ? (
             <div className="mt-4">
-              <p className="mb-2 text-xs font-medium text-muted">Langkah bulan depan</p>
+              <p className="mb-2 text-xs font-medium text-muted">Plan bulan depan</p>
               <ol className="space-y-2">
                 {ai.actions.map((a, i) => (
                   <li key={i} className="flex gap-3 rounded-xl border border-border bg-surface-2 p-3">
@@ -152,7 +152,7 @@ export default function InsightPage() {
       <Card>
         <CardHeader
           title="Insight otomatis"
-          subtitle={`${monthLabel(month)} · dihitung di perangkat, tanpa kirim data`}
+          subtitle="Insight ini dihitung otomatis dari data lo di device ini"
         />
         {hasData ? (
           <div className="grid gap-3 p-4 sm:grid-cols-2">
@@ -180,8 +180,8 @@ export default function InsightPage() {
 
       <p className="px-1 text-[11px] text-muted">
         Insight otomatis dihitung lokal dari data di perangkat. Analisis AI mengirim ringkasan
-        agregat (total, kategori, tren) ke API — bukan detail transaksi mentah — dan hanya jalan
-        kalau kamu tekan tombolnya.
+        agregat (total, kategori, tren) ke API - bukan detail transaksi mentah - dan hanya jalan
+        kalau lo tekan tombolnya.
       </p>
     </div>
   );

@@ -42,12 +42,12 @@ export default function LoginPage() {
       if (mode === "cloud") {
         await signInSupabase(email.trim(), password, cloudMode);
       } else {
-        if (pin && !/^\d{6}$/.test(pin)) throw new Error("Eh, PIN-nya harus 6 digit angka ya");
+        if (pin && !/^\d{6}$/.test(pin)) throw new Error("PIN-nya 6 digit angka ya");
         await signInLocal(name, pin || undefined);
       }
       router.replace("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal masuk nih, coba lagi ya");
+      setError(err instanceof Error ? err.message : "Gagal masuk nih");
     } finally {
       setBusy(false);
     }
@@ -88,11 +88,11 @@ export default function LoginPage() {
             </span>
           </div>
           <div>
-            <h2 className="text-2xl font-semibold">Gaskeun ke TrackingDuit</h2>
+            <h2 className="text-2xl font-semibold">Yuk masuk dulu</h2>
             <p className="mt-1 text-sm text-muted">
               {supabaseEnabled
-                ? "Mau datamu nyambung di semua HP? Pake akun cloud. Kalau simpel-simpelan aja, mode lokal juga oke kok."
-                : "Lagi mode lokal nih — data kamu aman tersimpan di browser ini aja."}
+                ? "Pake akun buat sync di semua device, atau mode offline aja gpp."
+                : "Mode offline aktif - data lo cuma ada di browser ini."}
             </p>
           </div>
 
@@ -102,8 +102,8 @@ export default function LoginPage() {
               value={mode}
               onChange={setMode}
               options={[
-                { value: "cloud", label: "Akun Cloud" },
-                { value: "local", label: "Mode Lokal" },
+                { value: "cloud", label: "Pake Akun" },
+                { value: "local", label: "Offline Aja" },
               ]}
             />
           ) : null}
@@ -134,7 +134,7 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              <Field label="Nama Panggilan">
+              <Field label="Nama lo">
                 <Input
                   required
                   value={name}
@@ -143,7 +143,7 @@ export default function LoginPage() {
                   autoComplete="nickname"
                 />
               </Field>
-              <Field label="PIN 6 Digit" hint="Opsional — biar aman banget.">
+              <Field label="PIN 6 digit (kalo mau)" hint="Opsional - biar aman banget.">
                 <Input
                   inputMode="numeric"
                   maxLength={6}
@@ -162,7 +162,7 @@ export default function LoginPage() {
           ) : null}
 
           <Button type="submit" size="lg" className="w-full" loading={busy}>
-            {mode === "cloud" && cloudMode === "register" ? "Yuk, Daftar!" : "Gas, Mulai!"}
+            {mode === "cloud" && cloudMode === "register" ? "Daftar" : "Mulai"}
           </Button>
 
           {mode === "cloud" ? (

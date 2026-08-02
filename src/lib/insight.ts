@@ -75,7 +75,7 @@ export function buildInsights({
       body:
         rate >= 0.2
           ? `Sisa ${formatIDR(t.net)} dari pemasukan. Sudah di atas patokan sehat 20%.`
-          : `Sisa ${formatIDR(t.net)}. Patokan sehat 20% — perlu naik ${formatIDR(t.income * 0.2 - t.net)} lagi.`,
+          : `Sisa ${formatIDR(t.net)}. Patokan sehat 20% - perlu naik ${formatIDR(t.income * 0.2 - t.net)} lagi.`,
       tone: rate >= 0.2 ? "positive" : "warning",
       weight: 70,
     });

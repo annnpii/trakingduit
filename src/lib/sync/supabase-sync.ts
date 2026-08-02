@@ -91,11 +91,6 @@ export async function syncSupabase(options: SupabaseSyncOptions = {}): Promise<S
       }
     }
 
-    const walletCount = await db().wallets.count();
-    if (walletCount === 0) {
-      await seedIfEmpty();
-    }
-
     await setSetting(LAST_SUPABASE_SYNC, startedAt);
     // Auto-sync jalan tiap menit; tanpa guard ini syncLogs tumbuh ~1440 baris/hari.
     if (!options.silent || pushed || pulled) {

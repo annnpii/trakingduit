@@ -10,11 +10,14 @@
   --border: #e3e6ec;
   --fg: #0f172a;
   --fg-muted: #64748b;
-  --brand: #0f9d76;
+  --brand: #0c805e;
   --brand-fg: #ffffff;
-  --income: #0f9d76;
-  --expense: #e04f5f;
-  --warn: #d98324;
+  --income: #0c805e;
+  --expense: #d03445;
+  --expense-fg: #ffffff;
+  --warn: #a95f12;
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.05), 0 6px 20px rgb(15 23 42 / 0.06);
+  --shadow-pop: 0 4px 12px rgb(15 23 42 / 0.08), 0 16px 40px rgb(15 23 42 / 0.12);
 }
 
 [data-theme="dark"] {
@@ -29,7 +32,10 @@
   --brand-fg: #04140f;
   --income: #2ee6a8;
   --expense: #ff7b8a;
+  --expense-fg: #20050a;
   --warn: #f2b544;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.35);
+  --shadow-pop: 0 4px 12px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.5);
 }
 
 @theme inline {
@@ -43,9 +49,9 @@
   --color-brand-fg: var(--brand-fg);
   --color-income: var(--income);
   --color-expense: var(--expense);
+  --color-expense-fg: var(--expense-fg);
   --color-warn: var(--warn);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-jakarta);
 }
 
 html,
@@ -55,7 +61,7 @@ body {
 }
 
 body {
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-jakarta), system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
 }
@@ -76,7 +82,7 @@ textarea {
 }
 
 @utility num {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-jakarta), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
 }
 

@@ -37,10 +37,10 @@ export default function GoalsPage() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Total target" value={totalTarget} />
-        <StatTile label="Udah kekumpul" value={totalSaved} tone="income" />
-        <StatTile label="Kurang dikit lagi" value={Math.max(0, totalTarget - totalSaved)} tone="expense" />
+        <StatTile label="Udah terkumpul" value={totalSaved} tone="income" />
+        <StatTile label="Kurang" value={Math.max(0, totalTarget - totalSaved)} tone="expense" />
         <StatTile
-          label="Cuan terkumpul"
+          label="Progress"
           value={`${pct(totalSaved, totalTarget)}%`}
           tone="brand"
           hint={`${active.length} target aktif`}
@@ -81,7 +81,7 @@ export default function GoalsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label="Ubah"
+                      aria-label="Edit"
                       onClick={() => {
                         setEditing(g);
                         setOpen(true);
@@ -118,11 +118,11 @@ export default function GoalsPage() {
                       {daysLeft && daysLeft > 0
                         ? `${daysLeft} hari lagi`
                         : daysLeft === 0
-                          ? "Jatuh tempo hari ini"
-                          : "Lewat deadline"}
+                          ? "Deadline hari ini"
+                          : "Udah lewat deadline"}
                     </span>
                   ) : null}
-                  {perMonth > 0 ? <span>· nabung {formatIDR(perMonth)}/bln</span> : null}
+                  {perMonth > 0 ? <span>· nabung {formatIDR(perMonth)}/bulan</span> : null}
                 </div>
 
                 <div className="mt-3 flex gap-2">
@@ -139,7 +139,7 @@ export default function GoalsPage() {
                     size="sm"
                     onClick={() => updateGoal(g.id, { archived: g.archived ? 0 : 1 })}
                   >
-                    {g.archived ? "Aktifkan" : "Arsip"}
+                    {g.archived ? "Aktifin" : "Arsip"}
                   </Button>
                 </div>
               </Card>
@@ -232,7 +232,7 @@ function GoalSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title={goal ? "Ubah Target" : "Target Baru"}
+      title={goal ? "Edit Target" : "Target Baru"}
       footer={
         <Button className="w-full" size="lg" onClick={save} disabled={!name.trim() || !target}>
           Simpan

@@ -46,7 +46,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
   primary: "bg-brand text-brand-fg hover:opacity-90 shadow-sm",
   secondary: "bg-surface-2 text-fg hover:bg-border/60 border border-border",
   ghost: "text-muted hover:text-fg hover:bg-surface-2",
-  danger: "bg-expense text-white hover:opacity-90",
+  danger: "bg-expense text-expense-fg hover:opacity-90",
   outline: "border border-border text-fg hover:bg-surface-2",
 };
 
@@ -73,7 +73,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center rounded-xl font-medium transition-colors",
+        "inline-flex cursor-pointer items-center justify-center rounded-xl font-medium transition-colors active:scale-[0.97]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
         "disabled:pointer-events-none disabled:opacity-50",
         VARIANTS[variant],
@@ -133,7 +133,7 @@ export function Field({
 }
 
 const CONTROL =
-  "w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm text-fg placeholder:text-muted/70 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:opacity-60";
+  "w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm text-fg placeholder:text-muted outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:opacity-60";
 
 export function Input({ className, ...props }: React.ComponentProps<"input">) {
   return <input className={cn(CONTROL, className)} {...props} />;
@@ -225,7 +225,7 @@ export function Sheet({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          "animate-rise relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl border border-border bg-surface shadow-2xl sm:rounded-2xl",
+          "animate-rise relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl border border-border bg-surface shadow-(--shadow-pop) sm:rounded-2xl",
           size === "lg" ? "sm:max-w-2xl" : "sm:max-w-md",
         )}
       >
@@ -335,7 +335,7 @@ export function SegmentedControl<T extends string>({
           aria-selected={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "flex-1 rounded-lg px-3 py-1.5 transition",
+            "flex-1 cursor-pointer rounded-lg px-3 py-1.5 transition",
             value === o.value ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg",
           )}
         >

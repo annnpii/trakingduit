@@ -62,7 +62,7 @@ export default function WalletsPage() {
     <div className="space-y-4">
       <Card className="flex items-center justify-between p-5">
         <div>
-          <p className="text-xs text-muted">Total saldo semua dompet</p>
+          <p className="text-xs text-muted">Total semua dompet</p>
           <p className="num mt-1 text-2xl font-semibold">{formatIDR(total)}</p>
           <p className="mt-1 text-xs text-muted">{active.length} dompet aktif</p>
         </div>
@@ -94,7 +94,7 @@ export default function WalletsPage() {
                   const res = await deleteWallet(w.id);
                   toast(
                     res.archived
-                      ? `Dompet punya ${res.txCount} transaksi — diarsipkan, bukan dihapus`
+                      ? `Dompet punya ${res.txCount} transaksi - diarsipkan, bukan dihapus`
                       : "Dompet dihapus",
                     "success",
                   );
@@ -108,7 +108,7 @@ export default function WalletsPage() {
           <EmptyState
             icon={WalletIcon}
             title="Belum ada dompet"
-            description="Tambahkan dompet tunai, rekening bank, atau e-wallet."
+            description="Tambahin dompet tunai, bank, atau e-wallet."
             action={
               <Button
                 size="sm"
@@ -126,7 +126,7 @@ export default function WalletsPage() {
 
       {archived.length ? (
         <section>
-          <h2 className="mb-2 px-1 text-xs font-medium text-muted">Diarsipkan</h2>
+          <h2 className="mb-2 px-1 text-xs font-medium text-muted">Diarsip</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {archived.map((w) => (
               <WalletCard
@@ -144,7 +144,7 @@ export default function WalletsPage() {
                     const res = await deleteWallet(w.id);
                     toast(
                       res.archived
-                        ? `Dompet punya ${res.txCount} transaksi — diarsipkan, bukan dihapus`
+                        ? `Dompet punya ${res.txCount} transaksi - diarsipkan, bukan dihapus`
                         : "Dompet dihapus",
                       "success",
                     );
@@ -194,14 +194,14 @@ function WalletCard({
           <DynIcon name={wallet.icon} className="size-5" />
         </span>
         <div className="flex gap-1">
-          <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Ubah dompet">
+          <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Edit dompet">
             <Pencil className="size-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
             onClick={onArchive}
-            aria-label={wallet.archived ? "Aktifkan" : "Arsipkan"}
+            aria-label={wallet.archived ? "Aktifin" : "Arsip"}
           >
             {wallet.archived ? (
               <ArchiveRestore className="size-3.5" />
@@ -284,7 +284,7 @@ function WalletSheet({
     const res = await deleteWallet(wallet.id);
     toast(
       res.archived
-        ? `Dompet punya ${res.txCount} transaksi — diarsipkan, bukan dihapus`
+        ? `Dompet punya ${res.txCount} transaksi - diarsipkan, bukan dihapus`
         : "Dompet dihapus",
       "success",
     );

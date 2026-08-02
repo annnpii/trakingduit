@@ -75,8 +75,8 @@ export default function AnalyticsPage() {
             value={scope}
             onChange={setScope}
             options={[
-              { value: "expense", label: "Pengeluaran" },
-              { value: "income", label: "Pemasukan" },
+              { value: "expense", label: "Keluar" },
+              { value: "income", label: "Masuk" },
             ]}
           />
           <Button variant="ghost" size="icon" onClick={exportCsv} aria-label="Ekspor CSV">
@@ -86,9 +86,9 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Pemasukan" value={t.income} tone="income" />
+        <StatTile label="Duit masuk" value={t.income} tone="income" />
         <StatTile
-          label="Pengeluaran"
+          label="Duit keluar"
           value={t.expense}
           tone="expense"
           hint={
@@ -104,12 +104,12 @@ export default function AnalyticsPage() {
             ) : undefined
           }
         />
-        <StatTile label="Selisih" value={t.net} tone={t.net >= 0 ? "income" : "expense"} />
+        <StatTile label="Sisa" value={t.net} tone={t.net >= 0 ? "income" : "expense"} />
         <StatTile
-          label="Rasio menabung"
+          label="Rasio nabung"
           value={`${Math.round(rate * 100)}%`}
           tone="brand"
-          hint={`Rata-rata harian ${formatIDR(averageDailySpend(monthTx, month))}`}
+          hint={`Rata-rata per hari ${formatIDR(averageDailySpend(monthTx, month))}`}
         />
       </div>
 
@@ -117,14 +117,14 @@ export default function AnalyticsPage() {
         <>
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
-              <CardHeader title="Arus kas harian" subtitle={monthLabel(month)} />
+              <CardHeader title="Masuk-keluar harian" subtitle={monthLabel(month)} />
               <div className="px-2 pt-2 pb-3">
                 <DailyFlowChart data={daily} />
               </div>
             </Card>
             <Card>
               <CardHeader
-                title={`Komposisi ${scope === "expense" ? "pengeluaran" : "pemasukan"}`}
+                title={`${scope === "expense" ? "Keluar kemana aja" : "Masuk dari mana aja"}`}
                 subtitle={`${slices.length} kategori`}
               />
               <div className="px-2 pt-2 pb-3">
@@ -141,7 +141,7 @@ export default function AnalyticsPage() {
               </div>
             </Card>
             <Card>
-              <CardHeader title="Tren selisih bulanan" subtitle="Pemasukan − pengeluaran" />
+              <CardHeader title="Tren sisa bulanan" subtitle="Masuk − keluar" />
               <div className="px-2 pt-2 pb-3">
                 <NetTrendChart data={monthly} />
               </div>
@@ -150,14 +150,14 @@ export default function AnalyticsPage() {
 
           <div className="grid items-start gap-4 lg:grid-cols-3">
             <Card className="lg:col-span-2">
-              <CardHeader title="Pengeluaran per hari" subtitle="Pola mingguan" />
+              <CardHeader title="Keluar per hari" subtitle="Pola mingguan" />
               <div className="px-2 pt-2 pb-3">
                 <WeekdayChart data={weekday} />
               </div>
             </Card>
 
             <Card>
-              <CardHeader title="Merchant teratas" subtitle="Berdasarkan total belanja" />
+              <CardHeader title="Tempat belanja favorit" subtitle="Total belanja terbanyak" />
               <ul className="divide-y divide-border">
                 {merchants.length ? (
                   merchants.map((m, i) => (
@@ -172,7 +172,7 @@ export default function AnalyticsPage() {
                   ))
                 ) : (
                   <li className="px-4 py-6 text-center text-xs text-muted">
-                    Isi kolom merchant saat mencatat untuk melihat ranking.
+                    Isi nama tempat belanja buat liat rankingnya.
                   </li>
                 )}
               </ul>
@@ -180,7 +180,7 @@ export default function AnalyticsPage() {
           </div>
 
           <Card>
-            <CardHeader title="Rincian kategori" subtitle={monthLabel(month)} />
+            <CardHeader title="Detail per kategori" subtitle={monthLabel(month)} />
             <ul className="divide-y divide-border">
               {slices.map((c) => (
                 <li key={c.category_id} className="flex items-center gap-3 px-4 py-3">
@@ -202,8 +202,8 @@ export default function AnalyticsPage() {
         <Card>
           <EmptyState
             icon={ChartPie}
-            title="Belum ada data untuk dianalisis"
-            description="Catat beberapa transaksi dulu, grafik akan muncul otomatis."
+            title="Belum ada data buat dianalisis"
+            description="Catat beberapa transaksi dulu, nanti grafiknya muncul otomatis."
           />
         </Card>
       )}

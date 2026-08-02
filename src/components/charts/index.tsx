@@ -157,7 +157,7 @@ export function NetTrendChart({ data }: { data: MonthlyPoint[] }) {
         <Line
           type="monotone"
           dataKey="net"
-          name="Selisih"
+          name="Sisa"
           stroke="var(--brand)"
           strokeWidth={2.5}
           dot={{ r: 3, fill: "var(--brand)" }}

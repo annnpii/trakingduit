@@ -56,7 +56,7 @@ export default function ScanPage() {
     }
     setBusy(true);
     setProgress(0.02);
-    setStage("Menyiapkan gambar");
+    setStage("Nyiapin gambar...");
     try {
       const dataUrl = await prepareImage(file);
       const { text, engine } = await runOcr(dataUrl, (ratio, s) => {
@@ -79,7 +79,7 @@ export default function ScanPage() {
         parsed.total ? "success" : "info",
       );
     } catch (err) {
-      toast(err instanceof Error ? err.message : "OCR gagal", "error");
+      toast(err instanceof Error ? err.message : "Gagal baca struk", "error");
     } finally {
       setBusy(false);
       setProgress(0);
@@ -133,10 +133,9 @@ export default function ScanPage() {
             <ScanLine className="size-6" />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold">Scan nota belanja</h2>
+            <h2 className="text-sm font-semibold">Scan struk belanja</h2>
             <p className="mt-1 text-xs text-muted">
-              Foto struk, nominal dan merchant terisi otomatis. Hasil selalu bisa dikoreksi sebelum
-              disimpan.
+              Foto struknya, nominal sama nama toko bakal keisi otomatis. Bisa lo edit sebelum disimpen.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button onClick={() => cameraRef.current?.click()} disabled={busy}>
@@ -204,7 +203,7 @@ export default function ScanPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="num text-sm font-medium">
-                    {r.parsed.total ? formatIDR(r.parsed.total) : "—"}
+                    {r.parsed.total ? formatIDR(r.parsed.total) : "-"}
                   </span>
                   <Badge tone={r.status === "confirmed" ? "income" : "warn"}>
                     {r.status === "confirmed" ? "Tersimpan" : "Pending"}

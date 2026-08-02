@@ -119,7 +119,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4">
       {/* Balance hero */}
-      <Card className="relative overflow-hidden p-5">
+      <Card className="relative overflow-hidden p-5 shadow-(--shadow-card)">
         <div
           className="pointer-events-none absolute -top-20 -right-16 size-56 rounded-full opacity-15 blur-3xl"
           style={{ background: "var(--brand)" }}
@@ -127,10 +127,10 @@ export default function DashboardPage() {
         <div className="relative flex items-start justify-between">
           <div>
             <p className="flex items-center gap-2 text-xs text-muted">
-              <WalletIcon className="size-3.5" /> Total saldo
+              <WalletIcon className="size-3.5" /> Total duit lo
               <button
                 onClick={toggleHideBalance}
-                aria-label={hideBalance ? "Lihat saldo" : "Sembunyiin saldo"}
+                aria-label={hideBalance ? "Liat duit" : "Sembunyiin duit"}
                 className="text-muted transition hover:text-fg"
               >
                 {hideBalance ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
@@ -147,13 +147,13 @@ export default function DashboardPage() {
         <div className="relative mt-4 grid grid-cols-2 gap-3">
           <div className="rounded-xl border border-border bg-surface-2 px-3 py-2.5">
             <p className="flex items-center gap-1.5 text-[11px] text-muted">
-              <ArrowDownLeft className="size-3.5 text-income" /> Pemasukan
+              <ArrowDownLeft className="size-3.5 text-income" /> Duit masuk
             </p>
             <p className="num mt-0.5 text-sm font-semibold text-income">{mask(t.income)}</p>
           </div>
           <div className="rounded-xl border border-border bg-surface-2 px-3 py-2.5">
             <p className="flex items-center gap-1.5 text-[11px] text-muted">
-              <ArrowUpRight className="size-3.5 text-expense" /> Pengeluaran
+              <ArrowUpRight className="size-3.5 text-expense" /> Duit keluar
             </p>
             <p className="num mt-0.5 text-sm font-semibold text-expense">{mask(t.expense)}</p>
           </div>
@@ -164,7 +164,7 @@ export default function DashboardPage() {
 
       {/* Quick actions */}
       <div className="grid grid-cols-4 gap-2">
-        <QuickAction href="/scan" icon={ScanLine} label="Scan Nota" />
+        <QuickAction href="/scan" icon={ScanLine} label="Scan Struk" />
         <QuickAction href="/transactions" icon={ListOrdered} label="Transaksi" />
         <QuickAction href="/budgets" icon={TrendingDown} label="Budget" />
         <QuickAction href="/goals" icon={Target} label="Target" />
@@ -173,28 +173,28 @@ export default function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
-          label="Selisih bulan ini"
+          label="Sisa duit bulan ini"
           value={t.net}
           tone={t.net >= 0 ? "income" : "expense"}
-          hint={`Rasio nabung ${Math.round(rate * 100)}%`}
+          hint={`Nabung ${Math.round(rate * 100)}%`}
         />
-        <StatTile label="Rata-rata harian" value={avgDaily} hint="Pengeluaran per hari" />
+        <StatTile label="Rata-rata per hari" value={avgDaily} hint="Keluar per hari" />
         <StatTile
-          label="Proyeksi akhir bulan"
+          label="Prediksi akhir bulan"
           value={projected}
           tone="expense"
-          hint="Berdasarkan laju saat ini"
+          hint="Kalo terus kayak gini"
         />
         <StatTile
-          label="Kategori terbesar"
-          value={catSlices[0] ? formatIDR(catSlices[0].total) : "—"}
-          hint={catSlices[0]?.name ?? "Belum ada data"}
+          label="Paling boros di mana"
+          value={catSlices[0] ? formatIDR(catSlices[0].total) : "-"}
+          hint={catSlices[0]?.name ?? "Belum ada nih"}
         />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader title="Arus kas harian" subtitle="Pemasukan vs pengeluaran" />
+          <CardHeader title="Masuk-keluar harian" subtitle="Duit masuk vs keluar" />
           <div className="px-2 pt-2 pb-3">
             {t.count ? (
               <DailyFlowChart data={daily} />
@@ -202,7 +202,7 @@ export default function DashboardPage() {
               <EmptyState
                 icon={PiggyBank}
                 title="Belum ada transaksi bulan ini"
-                description="Catat transaksi pertama untuk melihat grafik arus kas."
+                description="Catat transaksi pertama buat liat grafiknya."
               />
             )}
           </div>
@@ -210,7 +210,7 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader
-            title="Pengeluaran per kategori"
+            title="Keluar kemana aja"
             action={
               <Link href="/analytics" className="text-xs text-brand hover:underline">
                 Detail
@@ -237,7 +237,7 @@ export default function DashboardPage() {
                 </div>
               ))
             ) : (
-              <p className="py-6 text-center text-xs text-muted">Belum ada pengeluaran.</p>
+              <p className="py-6 text-center text-xs text-muted">Belum keluar duit nih.</p>
             )}
           </div>
         </Card>
@@ -250,7 +250,7 @@ export default function DashboardPage() {
             title="Dompet"
             action={
               <Link href="/wallets" className="text-xs text-brand hover:underline">
-                Kelola
+                Atur
               </Link>
             }
           />
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                 );
               })
             ) : (
-              <p className="py-6 text-center text-xs text-muted">Belum ada budget.</p>
+              <p className="py-6 text-center text-xs text-muted">Belum set budget nih.</p>
             )}
           </div>
         </Card>
@@ -314,7 +314,7 @@ export default function DashboardPage() {
         {/* Bills + goals */}
         <Card>
           <CardHeader
-            title="Tagihan terdekat"
+            title="Tagihan yang deket"
             action={
               <Link href="/bills" className="text-xs text-brand hover:underline">
                 Semua
@@ -338,7 +338,7 @@ export default function DashboardPage() {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">{b.name}</span>
                       <span className="block text-[11px] text-muted">
-                        {late ? "Lewat jatuh tempo" : `Jatuh tempo ${b.due_date}`}
+                        {late ? "Udah telat" : `Deadline ${b.due_date}`}
                       </span>
                     </span>
                     <span className="num text-sm">{formatIDR(b.amount)}</span>
@@ -346,7 +346,7 @@ export default function DashboardPage() {
                 );
               })
             ) : (
-              <li className="py-6 text-center text-xs text-muted">Tidak ada tagihan aktif.</li>
+              <li className="py-6 text-center text-xs text-muted">Ga ada tagihan.</li>
             )}
             {goals.slice(0, 1).map((g) => (
               <li key={g.id} className="mt-2 rounded-xl border border-border px-3 py-2">
@@ -388,11 +388,11 @@ export default function DashboardPage() {
             <EmptyState
               icon={ListOrdered}
               title="Belum ada transaksi"
-              description="Tekan tombol + untuk mencatat transaksi pertama."
+              description="Tap tombol + buat catat transaksi pertama."
               action={
                 <Link href="/scan">
                   <Button variant="secondary" size="sm">
-                    <ScanLine className="size-4" /> Scan nota
+                    <ScanLine className="size-4" /> Scan struk
                   </Button>
                 </Link>
               }
@@ -422,7 +422,7 @@ function QuickAction({
   return (
     <Link
       href={href}
-      className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-surface px-2 py-3 text-[11px] text-muted transition hover:border-brand/40 hover:text-fg"
+      className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-surface px-2 py-3 text-[11px] text-muted transition hover:border-brand/40 hover:text-fg active:scale-[0.97]"
     >
       <span className="grid size-9 place-items-center rounded-xl bg-brand/10 text-brand">
         <Icon className="size-4" />

@@ -69,7 +69,7 @@ export default function TransactionsPage() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari nama toko, catatan, atau nominal…"
+            placeholder="Cari tempat belanja, catatan, nominal…"
             className="pl-9"
           />
         </div>
@@ -85,7 +85,7 @@ export default function TransactionsPage() {
           <Download className="size-4" />
         </Button>
         <Button onClick={() => setAdding(true)} className="hidden sm:inline-flex">
-          <Plus className="size-4" /> Catat Transaksi
+          <Plus className="size-4" /> Catat transaksi
         </Button>
       </div>
 
@@ -127,7 +127,7 @@ export default function TransactionsPage() {
               setQuery("");
             }}
           >
-            <X className="size-4" /> Reset filter
+            <X className="size-4" /> Reset
           </Button>
         </Card>
       ) : null}
@@ -142,7 +142,7 @@ export default function TransactionsPage() {
           <p className="num text-sm font-semibold text-expense">{formatIDR(t.expense)}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[11px] text-muted">Selisih</p>
+          <p className="text-[11px] text-muted">Sisa</p>
           <p className={`num text-sm font-semibold ${t.net >= 0 ? "text-income" : "text-expense"}`}>
             {formatIDR(t.net)}
           </p>
@@ -160,9 +160,9 @@ export default function TransactionsPage() {
         ) : (
           <EmptyState
             icon={ListOrdered}
-            title="Tidak ada transaksi"
+            title="Ga ada transaksi"
             description={
-              activeFilters ? "Coba longgarkan filter." : "Belum ada catatan pada bulan ini."
+              activeFilters ? "Coba longgarkan filter." : "Belum ada catatan bulan ini."
             }
             action={
               <Button size="sm" onClick={() => setAdding(true)}>
