@@ -145,10 +145,10 @@ function BrandMark() {
   return (
     <span className="grid size-9 place-items-center overflow-hidden rounded-xl bg-brand">
       <Image
-        src="/icons/trakingduit.png"
+        src="/icons/logo.png"
         alt="TrakingDuit"
-        width={1536}
-        height={1024}
+        width={1254}
+        height={1254}
         className="size-full object-cover"
       />
     </span>

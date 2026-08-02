@@ -72,10 +72,10 @@ export default function LoginPage() {
         <div className="mb-8 flex flex-col items-center text-center">
           <span className="grid size-16 place-items-center overflow-hidden rounded-2xl bg-white/15 shadow-lg backdrop-blur-sm ring-1 ring-white/20">
             <Image
-              src="/icons/trakingduit.png"
+              src="/icons/logo.png"
               alt="TrakingDuit"
-              width={1536}
-              height={1024}
+              width={1254}
+              height={1254}
               priority
               className="size-full object-cover"
             />
