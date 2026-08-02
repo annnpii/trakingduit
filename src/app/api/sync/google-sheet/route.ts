@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { google } from "googleapis";
 import { SHEET_HEADERS, sheetRowToObject, type SheetRow } from "@/lib/export";
 import { isSupabaseConfigured, supabaseFromRequest } from "@/lib/supabase";
+import { sheetSyncRequestSchema, createErrorResponse } from "@/lib/validation";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -96,9 +97,22 @@ export async function POST(request: Request) {
 
   let rows: SheetRow[] = [];
   try {
-    ({ rows = [] } = (await request.json()) as { rows?: SheetRow[] });
-  } catch {
-    return NextResponse.json({ error: "Body JSON tidak valid" }, { status: 400 });
+    const body = await request.json();
+    const validated = sheetSyncRequestSchema.safeParse(body);
+    
+    if (!validated.success) {
+      return NextResponse.json(
+        createErrorResponse(`Invalid request: ${validated.error.issues.map(i => i.message).join(", ")}`),
+        { status: 400 }
+      );
+    }
+    
+    rows = validated.data.rows;
+  } catch (err) {
+    return NextResponse.json(
+      createErrorResponse("Body JSON tidak valid atau malformed"),
+      { status: 400 }
+    );
   }
 
   try {

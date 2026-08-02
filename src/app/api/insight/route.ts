@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { isSupabaseConfigured, supabaseFromRequest } from "@/lib/supabase";
+import { insightRequestSchema, createErrorResponse } from "@/lib/validation";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -78,11 +79,21 @@ export async function POST(request: Request) {
 
   let payload: unknown;
   try {
-    ({ payload } = (await request.json()) as { payload?: unknown });
+    const body = await request.json();
+    const validated = insightRequestSchema.safeParse(body);
+    
+    if (!validated.success) {
+      return NextResponse.json(
+        createErrorResponse(`Invalid request: ${validated.error.issues[0]?.message}`),
+        { status: 400 }
+      );
+    }
+    
+    payload = validated.data.payload;
   } catch {
-    return NextResponse.json({ error: "Body JSON tidak valid" }, { status: 400 });
+    return NextResponse.json(createErrorResponse("Body JSON tidak valid"), { status: 400 });
   }
-  if (!payload) return NextResponse.json({ error: "Field 'payload' wajib" }, { status: 400 });
+  if (!payload) return NextResponse.json(createErrorResponse("Field 'payload' wajib"), { status: 400 });
 
   try {
     const client = new Anthropic();
@@ -111,6 +122,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ insight: JSON.parse(text), model: response.model });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Gagal memanggil model";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return NextResponse.json(createErrorResponse(message), { status: 502 });
   }
 }

@@ -80,7 +80,6 @@ export default function LoginPage() {
               className="size-full object-cover"
             />
           </span>
-          <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">TrakingDuit</h1>
           <p className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
             Hai, Selamat Datang!
           </p>
@@ -93,7 +92,7 @@ export default function LoginPage() {
         <form onSubmit={submit} className="space-y-4 rounded-3xl bg-surface p-6 shadow-(--shadow-pop)">
           <p className="text-xs text-muted">
             {supabaseEnabled
-              ? "Pake akun buat sync di semua device, atau mode offline aja gpp."
+              ? "Pake akun buat sync di semua device, atau mode offline aja."
               : "Mode offline aktif - data lo cuma ada di browser ini."}
           </p>
 

@@ -40,7 +40,7 @@ export async function GET(request: Request) {
   const rangeEnd = monthRange(month).to;
 
   const [txRes, catRes] = await Promise.all([
-    sb.from("transactions").select("*").eq("deleted", 0).gte("date", rangeStart).lte("date", rangeEnd),
+    sb.from("transactions").select("*").eq("deleted", 0).gte("date", rangeStart).lte("date", rangeEnd).limit(5000), // Add pagination limit
     sb.from("categories").select("*").eq("deleted", 0),
   ]);
 

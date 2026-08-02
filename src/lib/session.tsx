@@ -9,6 +9,32 @@ import { syncSupabase } from "./sync/supabase-sync";
 
 const PROFILE_ID = "me";
 const UNLOCK_KEY = "td.unlocked";
+const UNLOCK_TIMEOUT = 15 * 60 * 1000; // 15 minutes auto-lock
+
+// Simple obfuscation untuk unlock state (bukan enkripsi penuh, tapi lebih baik dari plain "1")
+function createUnlockToken(): string {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 15);
+  return btoa(`${timestamp}:${random}`);
+}
+
+function validateUnlockToken(token: string | null): boolean {
+  if (!token) return false;
+  try {
+    const decoded = atob(token);
+    const [timestampStr] = decoded.split(":");
+    const timestamp = parseInt(timestampStr, 10);
+    const now = Date.now();
+    // Token expired after UNLOCK_TIMEOUT
+    if (now - timestamp > UNLOCK_TIMEOUT) {
+      sessionStorage.removeItem(UNLOCK_KEY);
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export type SessionStatus = "loading" | "signed-out" | "locked" | "ready";
 
@@ -46,7 +72,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
     await seedIfEmpty();
     setProfile(row);
-    const unlocked = sessionStorage.getItem(UNLOCK_KEY) === "1";
+    const unlocked = validateUnlockToken(sessionStorage.getItem(UNLOCK_KEY));
     setStatus(row.pin_hash && !unlocked ? "locked" : "ready");
   }, []);
 
@@ -68,7 +94,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       };
       await db().profile.put(row);
       await seedIfEmpty();
-      sessionStorage.setItem(UNLOCK_KEY, "1");
+      sessionStorage.setItem(UNLOCK_KEY, createUnlockToken());
       setProfile(row);
       setStatus("ready");
     },
@@ -106,7 +132,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         supabase_user_id: uid,
       };
       await db().profile.put(row);
-      sessionStorage.setItem(UNLOCK_KEY, "1");
+      sessionStorage.setItem(UNLOCK_KEY, createUnlockToken());
       setProfile(row);
       setStatus("ready");
     },
@@ -118,7 +144,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       if (!profile?.pin_hash) return false;
       const ok = (await hashPin(pin)) === profile.pin_hash;
       if (ok) {
-        sessionStorage.setItem(UNLOCK_KEY, "1");
+        sessionStorage.setItem(UNLOCK_KEY, createUnlockToken());
         setStatus("ready");
       }
       return ok;

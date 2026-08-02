@@ -81,6 +81,55 @@ export async function POST(request: Request) {
     );
   }
 
+  // Verify wallet ownership before creating transaction
+  const { data: wallet, error: walletError } = await sb
+    .from("wallets")
+    .select("id")
+    .eq("id", parsed.data.wallet_id)
+    .eq("user_id", auth.user.id)
+    .single();
+
+  if (walletError || !wallet) {
+    return NextResponse.json(
+      { error: "Wallet tidak ditemukan atau bukan milik Anda" },
+      { status: 403 },
+    );
+  }
+
+  // If transfer, verify to_wallet ownership too
+  if (parsed.data.type === "transfer" && parsed.data.to_wallet_id) {
+    const { data: toWallet, error: toWalletError } = await sb
+      .from("wallets")
+      .select("id")
+      .eq("id", parsed.data.to_wallet_id)
+      .eq("user_id", auth.user.id)
+      .single();
+
+    if (toWalletError || !toWallet) {
+      return NextResponse.json(
+        { error: "Destination wallet tidak ditemukan atau bukan milik Anda" },
+        { status: 403 },
+      );
+    }
+  }
+
+  // Verify category ownership if provided
+  if (parsed.data.category_id) {
+    const { data: category, error: categoryError } = await sb
+      .from("categories")
+      .select("id")
+      .eq("id", parsed.data.category_id)
+      .eq("user_id", auth.user.id)
+      .single();
+
+    if (categoryError || !category) {
+      return NextResponse.json(
+        { error: "Category tidak ditemukan atau bukan milik Anda" },
+        { status: 403 },
+      );
+    }
+  }
+
   const now = new Date().toISOString();
   const row = {
     ...parsed.data,

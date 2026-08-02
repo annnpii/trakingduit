@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isSupabaseConfigured, supabaseFromRequest } from "@/lib/supabase";
+import { ocrRequestSchema, createErrorResponse } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
@@ -33,18 +34,31 @@ export async function POST(request: Request) {
 
   let image: string | undefined;
   try {
-    ({ image } = (await request.json()) as { image?: string });
+    const body = await request.json();
+    const validated = ocrRequestSchema.safeParse(body);
+    
+    if (!validated.success) {
+      return NextResponse.json(
+        createErrorResponse(`Invalid request: ${validated.error.issues[0]?.message}`),
+        { status: 400 }
+      );
+    }
+    
+    image = validated.data.image;
   } catch {
-    return NextResponse.json({ error: "Body JSON tidak valid" }, { status: 400 });
+    return NextResponse.json(createErrorResponse("Body JSON tidak valid"), { status: 400 });
   }
-  if (!image) return NextResponse.json({ error: "Field 'image' wajib diisi" }, { status: 400 });
+  if (!image) return NextResponse.json(createErrorResponse("Field 'image' wajib diisi"), { status: 400 });
 
   const base64 = image.includes(",") ? image.split(",")[1] : image;
 
   try {
-    const res = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
+    const res = await fetch(`https://vision.googleapis.com/v1/images:annotate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey, // Use header instead of query param
+      },
       body: JSON.stringify({
         requests: [
           {
@@ -60,14 +74,14 @@ export async function POST(request: Request) {
     const first = json.responses?.[0];
     if (!res.ok || first?.error) {
       return NextResponse.json(
-        { error: first?.error?.message ?? "Vision API error" },
+        createErrorResponse(first?.error?.message ?? "Vision API error"),
         { status: 502 },
       );
     }
     return NextResponse.json({ text: first?.fullTextAnnotation?.text ?? "", engine: "google-vision" });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Vision request gagal" },
+      createErrorResponse(err instanceof Error ? err.message : "Vision request gagal"),
       { status: 502 },
     );
   }
