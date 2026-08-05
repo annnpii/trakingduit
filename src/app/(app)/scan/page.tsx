@@ -128,7 +128,7 @@ export default function ScanPage() {
       />
 
       <Card className="p-5">
-        <div className="flex items-start gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <span className="grid size-12 shrink-0 place-items-center rounded-full bg-brand/10 text-brand">
             <ScanLine className="size-6" />
           </span>
@@ -137,11 +137,16 @@ export default function ScanPage() {
             <p className="mt-1 text-xs text-muted">
               Foto struknya, nominal sama nama toko bakal keisi otomatis. Bisa lo edit sebelum disimpen.
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button onClick={() => cameraRef.current?.click()} disabled={busy}>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Button className="w-full sm:w-auto" onClick={() => cameraRef.current?.click()} disabled={busy}>
                 <Camera className="size-4" /> Ambil foto
               </Button>
-              <Button variant="secondary" onClick={() => fileRef.current?.click()} disabled={busy}>
+              <Button
+                variant="secondary"
+                className="w-full sm:w-auto"
+                onClick={() => fileRef.current?.click()}
+                disabled={busy}
+              >
                 <ImageUp className="size-4" /> Pilih gambar
               </Button>
             </div>

@@ -49,6 +49,23 @@ export function preprocess(dataUrl: string): Promise<string> {
   });
 }
 
+/** Server-side Gemini Flash — best for thermal receipts, structured extraction. */
+async function tryGemini(dataUrl: string): Promise<OcrResult | null> {
+  try {
+    const res = await fetch("/api/ocr/gemini", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: dataUrl }),
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { text?: string; structured?: Record<string, unknown> };
+    if (!json.text?.trim()) return null;
+    return { text: json.text, engine: "gemini" };
+  } catch {
+    return null;
+  }
+}
+
 /** Server-side Google Vision — only answers when the API key is configured. */
 async function tryVision(dataUrl: string): Promise<OcrResult | null> {
   try {
@@ -67,14 +84,23 @@ async function tryVision(dataUrl: string): Promise<OcrResult | null> {
 }
 
 /**
- * Google Vision first (better on thermal receipts), Tesseract in the browser
- * as the always-available fallback.
+ * Gemini Flash first (best accuracy + structured extraction), Google Vision
+ * second, Tesseract in the browser as the always-available fallback.
  */
 export async function runOcr(
   dataUrl: string,
   onProgress?: (ratio: number, stage: string) => void,
 ): Promise<OcrResult> {
   onProgress?.(0.05, "Mengirim ke OCR");
+  
+  // Try Gemini first (free tier, best for receipts)
+  const gemini = await tryGemini(dataUrl);
+  if (gemini) {
+    onProgress?.(1, "Selesai");
+    return gemini;
+  }
+
+  // Fall back to Google Vision
   const vision = await tryVision(dataUrl);
   if (vision) {
     onProgress?.(1, "Selesai");

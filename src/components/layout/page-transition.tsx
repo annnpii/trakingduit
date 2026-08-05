@@ -2,27 +2,26 @@
 
 import * as React from "react";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { getAnimation } from "@/lib/animations";
+import { motion } from "framer-motion";
 
 /**
- * Wraps page content dengan fade/slide transition setiap pathname berubah.
- * Client component — dipakai di layout (app).
+ * Wraps page content dengan fade/slide ringan setiap pathname berubah.
+ * Tidak memakai AnimatePresence/exit — `key={pathname}` memaksa remount,
+ * jadi anak baru selalu di-mount & dianimasi ke opacity 1. Ini menghindari
+ * bug App Router di mana mode="wait" bisa membuat halaman tampil kosong
+ * sampai di-refresh.
  */
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={pathname}
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
-        transition={{ duration: 0.12, ease: "easeOut" }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      key={pathname}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.1, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
   );
 }

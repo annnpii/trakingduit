@@ -119,7 +119,7 @@ export interface Receipt extends Syncable {
   raw_text: string;
   parsed: ParsedReceipt;
   status: "pending" | "confirmed" | "rejected";
-  engine: "tesseract" | "google-vision";
+  engine: "tesseract" | "google-vision" | "gemini";
   transaction_id?: ID;
 }
 

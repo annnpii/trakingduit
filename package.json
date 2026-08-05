@@ -1,6 +1,6 @@
 {
   "name": "trakingduit",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.110.8",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
