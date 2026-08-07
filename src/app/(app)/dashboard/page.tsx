@@ -138,7 +138,7 @@ export default function DashboardPage() {
 
       {/* Balance hero */}
       <BalanceCard
-        label="Total saldo lo"
+        label="Total saldo"
         value={mask(totalBalance)}
         hidden={hideBalance}
         onToggleHide={toggleHideBalance}
