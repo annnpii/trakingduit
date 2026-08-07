@@ -14,6 +14,8 @@ import {
   TrendingDown,
   Wallet as WalletIcon,
   AlertCircle,
+  Sparkles,
+  MessageSquare,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { allWalletBalances } from "@/lib/repo";
@@ -32,6 +34,7 @@ import { useSession } from "@/lib/session";
 import { MonthSwitcher } from "@/components/layout/month-switcher";
 import { TransactionList } from "@/components/transactions/transaction-list";
 import { TransactionSheet } from "@/components/transactions/transaction-sheet";
+import { TraduChat } from "@/components/tradu/tradu-chat";
 
 type MenuTone = "brand" | "income" | "expense" | "warn" | "accent";
 
@@ -48,6 +51,7 @@ const QUICK: {
   { href: "/bills", icon: CalendarClock, label: "Tagihan", tone: "accent" },
   { href: "/analytics", icon: ChartPie, label: "Analisis", tone: "brand" },
   { href: "/wallets", icon: WalletIcon, label: "Dompet", tone: "income" },
+  { href: "/tradu", icon: MessageSquare, label: "Tanya Tradu", tone: "brand" },
 ];
 
 export default function DashboardPage() {
@@ -55,6 +59,7 @@ export default function DashboardPage() {
   const [month, setMonth] = React.useState(toMonthKey());
   const [hideBalance, setHideBalance] = React.useState(false);
   const [editing, setEditing] = React.useState<Transaction | null>(null);
+  const [traduOpen, setTraduOpen] = React.useState(false);
 
   React.useEffect(() => {
     const val = localStorage.getItem("td.hideBalance") === "1";
@@ -159,13 +164,39 @@ export default function DashboardPage() {
         }
       />
 
+      {/* Tradu AI Chat Entry */}
+      <button
+        onClick={() => setTraduOpen(true)}
+        className="group flex w-full items-center gap-3 rounded-2xl bg-surface p-4 shadow-(--shadow-card) transition hover:bg-surface-2 cursor-pointer"
+      >
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand/10 text-brand">
+          <Sparkles className="size-5" />
+        </span>
+        <span className="flex-1 text-left">
+          <span className="block text-sm font-semibold">Tanya Tradu ✨</span>
+          <span className="block text-xs text-muted">
+            Tanya soal duit lo, roast pengeluaran, tips nabung...
+          </span>
+        </span>
+        <span className="text-xs text-muted transition group-hover:translate-x-0.5 group-hover:text-brand">→</span>
+      </button>
+
       {/* Quick menu */}
       <section className="grid grid-cols-4 gap-2.5">
-        {QUICK.map((a) => (
-          <Link key={a.href} href={a.href} className="block">
-            <MenuTile icon={a.icon} label={a.label} tone={a.tone} className="h-full" />
-          </Link>
-        ))}
+        {QUICK.map((a) => {
+          if (a.href === "/tradu") {
+            return (
+              <button key={a.href} onClick={() => setTraduOpen(true)} className="block cursor-pointer text-left">
+                <MenuTile icon={a.icon} label={a.label} tone={a.tone} className="h-full" />
+              </button>
+            );
+          }
+          return (
+            <Link key={a.href} href={a.href} className="block">
+              <MenuTile icon={a.icon} label={a.label} tone={a.tone} className="h-full" />
+            </Link>
+          );
+        })}
       </section>
 
       {/* Bills section - replaced Budget */}
@@ -232,6 +263,11 @@ export default function DashboardPage() {
         open={Boolean(editing)}
         editing={editing}
         onClose={() => setEditing(null)}
+      />
+
+      <TraduChat
+        open={traduOpen}
+        onClose={() => setTraduOpen(false)}
       />
     </div>
   );
