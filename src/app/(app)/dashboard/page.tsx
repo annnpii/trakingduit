@@ -241,7 +241,25 @@ function BillItem({ bill, mask }: { bill: Bill; mask: (n: number) => string }) {
   const today = toDateKey();
   const isToday = bill.due_date === today;
   const isOverdue = bill.due_date < today;
-  const isPaid = !!bill.last_paid_at && bill.last_paid_at >= bill.due_date;
+
+  // Paid logic: for recurring bills, user may pay before due_date.
+  // Consider paid if last_paid_at falls within the current billing cycle.
+  const isPaid = (() => {
+    if (!bill.last_paid_at) return false;
+    const paidDate = bill.last_paid_at.slice(0, 10); // "YYYY-MM-DD"
+    // Already covers: paid on or after due_date
+    if (paidDate >= bill.due_date) return true;
+    // For monthly/yearly: paid within 30 days before due_date counts
+    if (bill.repeat === "monthly" || bill.repeat === "yearly") {
+      const due = new Date(bill.due_date);
+      const cycleStart = new Date(due);
+      cycleStart.setDate(cycleStart.getDate() - 30);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const cycleStartKey = `${cycleStart.getFullYear()}-${pad(cycleStart.getMonth() + 1)}-${pad(cycleStart.getDate())}`;
+      return paidDate >= cycleStartKey;
+    }
+    return false;
+  })();
 
   const status = isPaid
     ? { label: "Lunas", color: "text-income" }
@@ -256,13 +274,13 @@ function BillItem({ bill, mask }: { bill: Bill; mask: (n: number) => string }) {
       <div
         className={cn(
           "grid size-9 shrink-0 place-items-center rounded-lg",
-          isOverdue ? "bg-expense/10" : isToday ? "bg-warn/10" : "bg-surface-2",
+          isPaid ? "bg-income/10" : isOverdue ? "bg-expense/10" : isToday ? "bg-warn/10" : "bg-surface-2",
         )}
       >
         <AlertCircle
           className={cn(
             "size-4",
-            isOverdue ? "text-expense" : isToday ? "text-warn" : "text-muted",
+            isPaid ? "text-income" : isOverdue ? "text-expense" : isToday ? "text-warn" : "text-muted",
           )}
         />
       </div>
