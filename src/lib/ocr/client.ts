@@ -85,9 +85,9 @@ async function tryGemini(dataUrl: string): Promise<OcrResult | null> {
     if (!json.text?.trim()) return null;
     const structured = json.structured as Parameters<typeof structuredToParsed>[0] | undefined;
     if (structured && (structured.merchant || structured.total || (structured.items?.length ?? 0) > 0)) {
-      return { text: json.text, parsed: structuredToParsed(structured), engine: "gemini" };
+      return { text: json.text, parsed: structuredToParsed(structured), engine: "ai-ocr" };
     }
-    return { text: json.text, engine: "gemini" };
+    return { text: json.text, engine: "ai-ocr" };
   } catch {
     return null;
   }
