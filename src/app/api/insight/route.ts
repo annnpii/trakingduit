@@ -5,8 +5,8 @@ import { insightRequestSchema, createErrorResponse } from "@/lib/validation";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const API_URL = process.env.AI_API_URL ?? "http://100.106.72.4:20129/v1";
-const API_KEY = process.env.AI_API_KEY ?? "sk-23a9722ed5683fbd-1a80c2-d3ec2a58";
+const API_URL = process.env.AI_API_URL;
+const API_KEY = process.env.AI_API_KEY;
 const MODEL = process.env.AI_MODEL ?? "oc/deepseek-v4-flash-free";
 
 const SYSTEM = `Kamu penasihat keuangan pribadi untuk pengguna Indonesia.
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     if (!auth.user) return NextResponse.json({ error: "Token tidak valid" }, { status: 401 });
   }
 
-  if (!API_KEY) {
+  if (!API_URL || !API_KEY) {
     return NextResponse.json(
       { error: "API Key belum diset", fallback: "rules" },
       { status: 501 },

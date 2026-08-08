@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isSupabaseConfigured, supabaseFromRequest } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -12,6 +13,13 @@ const API_KEY = process.env.TRADU_API_KEY;
 const MODEL = process.env.TRADU_MODEL ?? "hermes";
 
 export async function POST(req: Request) {
+  if (isSupabaseConfigured) {
+    const sb = supabaseFromRequest(req);
+    if (!sb) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { data: auth } = await sb.auth.getUser();
+    if (!auth.user) return NextResponse.json({ error: "Token tidak valid" }, { status: 401 });
+  }
+
   try {
     const { messages, financialContext } = await req.json();
 

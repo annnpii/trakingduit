@@ -6,6 +6,7 @@ import { Send, Sparkles } from "lucide-react";
 import { Sheet, Button } from "@/components/ui";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
+import { supabaseBrowser } from "@/lib/supabase";
 import { allWalletBalances } from "@/lib/repo";
 import { totals } from "@/lib/analytics";
 import { monthRange, toMonthKey } from "@/lib/utils";
@@ -125,10 +126,13 @@ export function TraduChat({
 
       try {
         const currentMessages = [...messages, newUserMsg];
+        const sb = supabaseBrowser();
+        const token = sb ? (await sb.auth.getSession()).data.session?.access_token : undefined;
         const res = await fetch("/api/tradu", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(token ? { Authorization: "Bearer " + token } : {}),
           },
           body: JSON.stringify({
             messages: currentMessages.map((m) => ({
