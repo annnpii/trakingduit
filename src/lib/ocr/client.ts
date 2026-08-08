@@ -10,7 +10,7 @@ export interface OcrResult {
 }
 
 /** Downscale + re-encode so OCR is fast and the stored data URL stays small. */
-export async function prepareImage(file: File, maxSide = 1600, quality = 0.85): Promise<string> {
+export async function prepareImage(file: File, maxSide = 2200, quality = 0.92): Promise<string> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
   const width = Math.round(bitmap.width * scale);

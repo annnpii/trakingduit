@@ -203,7 +203,7 @@ export default function ScanPage() {
                   </p>
                   <p className="text-xs text-muted">
                     {r.parsed.date ?? r.created_at.slice(0, 10)} ·{" "}
-                    {r.engine === "gemini" ? "Gemini AI" : r.engine === "ai-ocr" ? "AI OCR" : r.engine === "google-vision" ? "Vision" : "Tesseract"}
+                    {r.engine === "gemini" ? "Gemini AI" : r.engine === "ai-ocr" ? "Tradu" : r.engine === "google-vision" ? "Vision" : "Tesseract"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -284,6 +284,7 @@ function ReceiptDetail({
   // Reconcile stored single-item totals on display too — older receipts may
   // hold a misread unit price (e.g. SPBU 10.002 read as 15.898).
   const p = reconcileItemTotal(receipt.parsed);
+  const [preview, setPreview] = React.useState(false);
   const lowConfidence = p.confidence < 0.6;
   const itemsSum = p.items.reduce((a, i) => a + (i.qty ? i.qty * i.price : i.price), 0);
   const itemsMismatch =
@@ -294,7 +295,7 @@ function ReceiptDetail({
       <CardHeader
         title="Hasil pembacaan"
         subtitle={`Akurasi perkiraan ${Math.round(p.confidence * 100)}% · ${
-          receipt.engine === "gemini" ? "Gemini AI" : receipt.engine === "ai-ocr" ? "AI OCR" : receipt.engine === "google-vision" ? "Google Vision" : "Tesseract"
+          receipt.engine === "gemini" ? "Gemini AI" : receipt.engine === "ai-ocr" ? "Tradu" : receipt.engine === "google-vision" ? "Google Vision" : "Tesseract"
         }`}
         action={
           <Button variant="ghost" size="sm" onClick={onShowRaw}>
@@ -304,14 +305,21 @@ function ReceiptDetail({
       />
       <div className="grid gap-4 p-4 sm:grid-cols-[160px_1fr]">
         {receipt.image ? (
-          <Image
-            src={receipt.image}
-            alt="Nota"
-            width={320}
-            height={420}
-            unoptimized
-            className="max-h-64 w-full rounded-xl border border-border object-cover sm:max-h-none"
-          />
+          <button
+            type="button"
+            onClick={() => setPreview(true)}
+            className="block cursor-zoom-in text-left"
+            aria-label="Lihat nota ukuran penuh"
+          >
+            <Image
+              src={receipt.image}
+              alt="Nota"
+              width={320}
+              height={420}
+              unoptimized
+              className="max-h-64 w-full rounded-xl border border-border object-cover transition group-hover:opacity-90 sm:max-h-none"
+            />
+          </button>
         ) : null}
 
         <div className="space-y-3">
@@ -418,6 +426,25 @@ function ReceiptDetail({
           </Button>
         </div>
       </div>
+
+      <Sheet
+        open={preview}
+        onClose={() => setPreview(false)}
+        title="Nota"
+        description={receipt.parsed.merchant ?? "Hasil scan"}
+        size="lg"
+      >
+        {receipt.image ? (
+          <Image
+            src={receipt.image}
+            alt="Nota"
+            width={800}
+            height={1000}
+            unoptimized
+            className="w-full rounded-xl border border-border"
+          />
+        ) : null}
+      </Sheet>
     </Card>
   );
 }

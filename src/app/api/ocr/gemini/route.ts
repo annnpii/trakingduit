@@ -50,6 +50,7 @@ PENTING:
 - PERHATIKAN ANGKA: struk thermal sering buram. Baca setiap digit dengan teliti, bedakan 1/7, 0/8, 3/8, 5/6. Baris 'nama qty x harga' → price = harga per satuan; baris 'nama harga' tanpa qty → price = harga baris
 - STRUK SPBU/BBM (PERTALITE, PERTAMAX, SOLAR, dll): format 'NAMA QTY LTR HARGA_PER_LITER TOTAL' (misal 'PERTALITE 4.2 LTR 10.002 42.010'). price = HARGA PER LITER (angka tengah, 10.002), jangan pernah jadikan total baris (42.010) sebagai price satuan
 - CROSS-CHECK: kalau struk cuma 1-2 item dan ada total, pastikan qty × price ≈ total (toleransi 2%). Kalau tidak nyambung (misal total 42.010, qty 4.2 → price harusnya ~10.002, BUKAN 15.898), berarti salah baca digit harga satuan — perbaiki
+- VALIDASI ARITMATIKA (WAJIB): hitung ulang dari item — sum(qty × price) harus ≈ total akhir. Kalau tidak cocok, berarti ada digit yang salah baca (4↔1, 9↔3, 6↔5, 0↔8, 7↔1) — baca ulang harga item DAN total dengan teliti, lalu perbaiki angka yang benar. Harga item yang wajar (ribuan hingga ratusan ribu), total = jumlah semua item
 - Jika tidak yakin, set null (bukan string kosong)
 - raw_text harus isi SEMUA teks yang kamu baca dari gambar
 
