@@ -59,11 +59,11 @@ export default function ScanPage() {
     setStage("Nyiapin gambar...");
     try {
       const dataUrl = await prepareImage(file);
-      const { text, engine } = await runOcr(dataUrl, (ratio, s) => {
+      const { text, parsed: ocrParsed, engine } = await runOcr(dataUrl, (ratio, s) => {
         setProgress(ratio);
         setStage(s);
       });
-      const parsed = parseReceipt(text);
+      const parsed = ocrParsed ?? parseReceipt(text);
       const receipt = await createReceipt({
         image: dataUrl,
         raw_text: text,
@@ -203,7 +203,7 @@ export default function ScanPage() {
                   </p>
                   <p className="text-xs text-muted">
                     {r.parsed.date ?? r.created_at.slice(0, 10)} ·{" "}
-                    {r.engine === "google-vision" ? "Vision" : "Tesseract"}
+                    {r.engine === "gemini" ? "Gemini AI" : r.engine === "google-vision" ? "Vision" : "Tesseract"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -289,7 +289,7 @@ function ReceiptDetail({
       <CardHeader
         title="Hasil pembacaan"
         subtitle={`Akurasi perkiraan ${Math.round(p.confidence * 100)}% · ${
-          receipt.engine === "google-vision" ? "Google Vision" : "Tesseract"
+          receipt.engine === "gemini" ? "Gemini AI" : receipt.engine === "google-vision" ? "Google Vision" : "Tesseract"
         }`}
         action={
           <Button variant="ghost" size="sm" onClick={onShowRaw}>
@@ -343,6 +343,12 @@ function ReceiptDetail({
               onChange={(v) => onPatch({ tax: Number(v.replace(/\D/g, "")) || undefined })}
             />
           </div>
+
+          <EditableField
+            label="Alamat"
+            value={p.address ?? ""}
+            onChange={(v) => onPatch({ address: v || undefined })}
+          />
 
           {p.items.length ? (
             <div className="rounded-xl border border-border">

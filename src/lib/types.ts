@@ -104,6 +104,7 @@ export interface Bill extends Syncable {
 
 export interface ParsedReceipt {
   merchant?: string;
+  address?: string;
   date?: ISODate;
   total?: number;
   subtotal?: number;

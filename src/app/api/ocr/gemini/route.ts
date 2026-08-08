@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 
 interface GeminiOcrResponse {
   merchant?: string;
+  address?: string;
   date?: string;
   total?: number;
   tax?: number;
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
 
 {
   "merchant": "nama toko/merchant (string, atau null jika tidak ada)",
+  "address": "alamat merchant/toko (string, atau null jika tidak ada)",
   "date": "tanggal transaksi format YYYY-MM-DD (string, atau null jika tidak ada)",
   "total": "total pembayaran (number dalam rupiah, atau null jika tidak ada)",
   "tax": "pajak/PPN jika ada (number dalam rupiah, atau null jika tidak ada)",
@@ -84,6 +86,7 @@ export async function POST(request: Request) {
 
 PENTING:
 - Merchant biasanya di baris paling atas
+- Alamat: cari baris dengan kata 'jl.', 'jalan', 'no.', 'rt', 'rw', 'kel', 'kec', atau teks alamat di bagian atas struk (bawah nama toko)
 - Cari keyword: "total", "grand total", "total bayar", "jumlah"
 - Cari keyword pajak: "ppn", "pb1", "tax", "pajak"
 - Format tanggal bisa DD/MM/YYYY, DD-MM-YYYY, atau "13 Mei 2024"
@@ -132,6 +135,7 @@ Respond HANYA dengan JSON, tanpa markdown code fence atau text lain.`;
       text: parsed.raw_text,
       structured: {
         merchant: parsed.merchant,
+        address: parsed.address,
         date: parsed.date,
         total: parsed.total,
         tax: parsed.tax,

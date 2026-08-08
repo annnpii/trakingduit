@@ -1,10 +1,11 @@
 "use client";
 
-import type { Receipt } from "../types";
+import type { ParsedReceipt, Receipt } from "../types";
 
 export interface OcrResult {
   text: string;
   engine: Receipt["engine"];
+  parsed?: ParsedReceipt;
 }
 
 /** Downscale + re-encode so OCR is fast and the stored data URL stays small. */
@@ -49,6 +50,27 @@ export function preprocess(dataUrl: string): Promise<string> {
   });
 }
 
+/** Map Gemini's structured extraction straight into ParsedReceipt, skipping regex. */
+function structuredToParsed(s: {
+  merchant?: string;
+  address?: string;
+  date?: string;
+  total?: number;
+  tax?: number;
+  items?: { name: string; qty?: number; price: number }[];
+}): ParsedReceipt {
+  return {
+    merchant: s.merchant || undefined,
+    address: s.address || undefined,
+    date: s.date || undefined,
+    total: s.total,
+    tax: s.tax,
+    items: (s.items ?? []).filter((i) => i && i.name && i.price > 0),
+    category_hint: s.merchant?.toLowerCase(),
+    confidence: 0.9,
+  };
+}
+
 /** Server-side Gemini Flash — best for thermal receipts, structured extraction. */
 async function tryGemini(dataUrl: string): Promise<OcrResult | null> {
   try {
@@ -60,6 +82,10 @@ async function tryGemini(dataUrl: string): Promise<OcrResult | null> {
     if (!res.ok) return null;
     const json = (await res.json()) as { text?: string; structured?: Record<string, unknown> };
     if (!json.text?.trim()) return null;
+    const structured = json.structured as Parameters<typeof structuredToParsed>[0] | undefined;
+    if (structured && (structured.merchant || structured.total || (structured.items?.length ?? 0) > 0)) {
+      return { text: json.text, parsed: structuredToParsed(structured), engine: "gemini" };
+    }
     return { text: json.text, engine: "gemini" };
   } catch {
     return null;
