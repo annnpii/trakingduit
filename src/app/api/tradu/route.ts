@@ -70,6 +70,7 @@ Dalam percakapan ini, tanggapi pertanyaan pengguna sesuai dengan kepribadian Tra
         model: MODEL,
         messages: apiMessages,
         temperature: 0.8,
+        stream: false,
       }),
     });
 
