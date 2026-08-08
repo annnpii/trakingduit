@@ -26,7 +26,7 @@ Additionally, this spec includes user-requested UI polish tasks (Dashboard text 
 - Model Configuration:
   - Endpoint: `https://thursday-punk-colour-consolidated.trycloudflare.com/v1`
   - Model: `hermes`
-  - Auth: `sk-23a9722ed5683fbd-0b2974-a8fb61c0` (Server-side API route proxy).
+  - Auth: API key disimpan di environment variable (jangan pernah commit secret).
 
 ### 2.4 Persona
 - "Tradu" will act as a frank, slightly savage Gen Z friend.

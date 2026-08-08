@@ -10,6 +10,7 @@ const RATE_LIMITS = {
   "/api/insight": { maxRequests: 5, windowMs: 60000 }, // 5 req/min
   "/api/sync/google-sheet": { maxRequests: 20, windowMs: 60000 }, // 20 req/min
   "/api/auth/login": { maxRequests: 5, windowMs: 300000 }, // 5 req/5min (brute force protection)
+  "/api/tradu": { maxRequests: 20, windowMs: 60000 }, // 20 req/min — chat memakai LLM berbayar
   default: { maxRequests: 100, windowMs: 60000 }, // 100 req/min for others
 };
 
@@ -86,7 +87,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protected API endpoints - require auth in production
-  const protectedEndpoints = ["/api/ocr", "/api/insight", "/api/sync/google-sheet", "/api/analytics", "/api/transactions"];
+  const protectedEndpoints = ["/api/ocr", "/api/insight", "/api/sync/google-sheet", "/api/analytics", "/api/transactions", "/api/tradu"];
 
   const isProtectedEndpoint = protectedEndpoints.some((endpoint) => pathname.startsWith(endpoint));
 
