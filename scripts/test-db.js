@@ -17,7 +17,11 @@ const env = {};
 envText.split('\n').forEach(line => {
   const parts = line.split('=');
   if (parts.length >= 2) {
-    env[parts[0].trim()] = parts.slice(1).join('=').trim();
+    let val = parts.slice(1).join('=').trim();
+    if (val.startsWith('"') && val.endsWith('"')) {
+      val = val.slice(1, -1);
+    }
+    env[parts[0].trim()] = val;
   }
 });
 

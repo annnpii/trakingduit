@@ -285,16 +285,32 @@ function BillItem({ bill, mask }: { bill: Bill; mask: (n: number) => string }) {
     const paidDate = bill.last_paid_at.slice(0, 10); // "YYYY-MM-DD"
     // Already covers: paid on or after due_date
     if (paidDate >= bill.due_date) return true;
-    // For monthly/yearly: paid within 30 days before due_date counts
-    if (bill.repeat === "monthly" || bill.repeat === "yearly") {
-      const due = new Date(bill.due_date);
-      const cycleStart = new Date(due);
-      cycleStart.setDate(cycleStart.getDate() - 30);
+    
+    // Calculate the start of the current cycle for the next due date
+    const cycleStart = (() => {
+      const d = new Date(bill.due_date);
+      switch (bill.repeat) {
+        case "weekly":
+          d.setDate(d.getDate() - 7);
+          break;
+        case "monthly":
+          d.setMonth(d.getMonth() - 1);
+          break;
+        case "yearly":
+          d.setFullYear(d.getFullYear() - 1);
+          break;
+        default:
+          return null;
+      }
       const pad = (n: number) => String(n).padStart(2, "0");
-      const cycleStartKey = `${cycleStart.getFullYear()}-${pad(cycleStart.getMonth() + 1)}-${pad(cycleStart.getDate())}`;
-      return paidDate >= cycleStartKey;
-    }
-    return false;
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    })();
+
+    if (!cycleStart) return false;
+
+    // 1. If we haven't reached the new cycle start date yet (early payment / still in paid period)
+    // 2. Or if the last payment was done today or in the future (just paid today)
+    return today < cycleStart || paidDate >= today;
   })();
 
   const status = isPaid

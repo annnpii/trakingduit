@@ -4,6 +4,11 @@ import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Sparkles } from "lucide-react";
 import { Sheet, Button } from "@/components/ui";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "@/lib/db";
+import { allWalletBalances } from "@/lib/repo";
+import { totals } from "@/lib/analytics";
+import { monthRange, toMonthKey } from "@/lib/utils";
 
 interface Message {
   id: string;
@@ -18,17 +23,6 @@ const QUICK_PROMPTS = [
   "Tips nabung dong",
 ];
 
-function mockTraduResponse(): string {
-  const r = [
-    "Anjir, gw liat pengeluaran lo bulan ini... lo yakin lo bukan ATM berjalan? 💸 Coba rem dikit, sisain buat tabungan minimal 20% dari gaji.",
-    "Boros? Lo nanya boros? Cek sendiri deh, nongkrong lo udah kayak biaya hidup orang satu RT. Saran gw: masak sendiri seminggu aja, hemat 500rb lebih.",
-    "Duit segini mah cukup buat foya-foya... kalo foya-foyanya beli es teh sama gorengan doang. Realistis ya bro 😂",
-    "Tips nabung dari Tradu: tiap gajian, langsung sisihkan 20% sebelum lo sempet buka Shopee. Auto-transfer ke rekening yg lo males buka. Dijamin works.",
-    "Gw liat saldo lo... yakin mau keluar rumah? 😬 Mending masak indomie dulu, nabung seminggu, baru boleh nongkrong.",
-  ];
-  return r[Math.floor(Math.random() * r.length)];
-}
-
 export function TraduChat({
   open,
   onClose,
@@ -41,6 +35,62 @@ export function TraduChat({
   const [typing, setTyping] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // Load financial database information using Dexie hooks
+  const month = toMonthKey();
+  const categories = useLiveQuery(() => db().categories.filter((c) => !c.deleted).toArray(), [], []);
+  const balances = useLiveQuery(
+    async () => {
+      await db().transactions.count();
+      await db().wallets.count();
+      return allWalletBalances();
+    },
+    [],
+    {} as Record<string, number>,
+  );
+  const monthTx = useLiveQuery(() => {
+    const { from, to } = monthRange(month);
+    return db()
+      .transactions.where("date")
+      .between(from, to, true, true)
+      .filter((t) => !t.deleted)
+      .toArray();
+  }, [month], []);
+
+  const totalBalance = Object.values(balances).reduce((a, b) => a + b, 0);
+  const t = totals(monthTx);
+
+  const recent = React.useMemo(
+    () =>
+      [...monthTx]
+        .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at))
+        .slice(0, 3),
+    [monthTx],
+  );
+
+  const topCategories = React.useMemo(() => {
+    if (!monthTx || !categories) return [];
+    const catsMap: Record<string, { total: number; count: number }> = {};
+    monthTx
+      .filter((tx) => tx.type === "expense")
+      .forEach((tx) => {
+        const cat = categories.find((c) => c.id === tx.category_id);
+        const name = cat?.name ?? "Lainnya";
+        if (!catsMap[name]) {
+          catsMap[name] = { total: 0, count: 0 };
+        }
+        catsMap[name].total += tx.amount;
+        catsMap[name].count += 1;
+      });
+    return Object.entries(catsMap)
+      .map(([name, val]) => ({
+        name,
+        total: val.total,
+        share: t.expense > 0 ? val.total / t.expense : 0,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 3);
+  }, [monthTx, categories, t.expense]);
 
   React.useEffect(() => {
     if (scrollRef.current) {
@@ -64,27 +114,74 @@ export function TraduChat({
   }, [open]);
 
   const sendMessage = React.useCallback(
-    (text: string) => {
+    async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || typing) return;
 
-      setMessages((prev) => [
-        ...prev,
-        { id: `u-${Date.now()}`, role: "user", content: trimmed },
-      ]);
+      const newUserMsg: Message = { id: `u-${Date.now()}`, role: "user", content: trimmed };
+      setMessages((prev) => [...prev, newUserMsg]);
       setInput("");
       setTyping(true);
 
-      // Mock response — will be replaced by real AI later
-      setTimeout(() => {
+      try {
+        const currentMessages = [...messages, newUserMsg];
+        const res = await fetch("/api/tradu", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages: currentMessages.map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
+            financialContext: {
+              totalBalance,
+              income: t.income,
+              expense: t.expense,
+              net: t.net,
+              topCategories,
+              recentTransactions: recent.map((tx) => {
+                const cat = categories?.find((c) => c.id === tx.category_id);
+                return {
+                  date: tx.date,
+                  description: tx.merchant || cat?.name || (tx.type === "income" ? "Pemasukan" : "Pengeluaran"),
+                  type: tx.type,
+                  amount: tx.amount,
+                };
+              }),
+            },
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error("HTTP error " + res.status);
+        }
+
+        const data = await res.json();
         setMessages((prev) => [
           ...prev,
-          { id: `a-${Date.now()}`, role: "assistant", content: mockTraduResponse() },
+          {
+            id: `a-${Date.now()}`,
+            role: "assistant",
+            content: data.reply || "Gokil, Tradu lagi kehabisan kata-kata nih. Cabut ah! 🫢",
+          },
         ]);
+      } catch (error) {
+        console.error("AI Error:", error);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `a-${Date.now()}`,
+            role: "assistant",
+            content: "Duh boncos, koneksi AI Tradu lagi putus. Coba tanya lagi bentar ya! 🫥",
+          },
+        ]);
+      } finally {
         setTyping(false);
-      }, 600 + Math.random() * 1000);
+      }
     },
-    [typing],
+    [typing, messages, totalBalance, t.income, t.expense, t.net, topCategories, recent],
   );
 
   const handleSubmit = (e: React.FormEvent) => {

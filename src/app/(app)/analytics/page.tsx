@@ -133,7 +133,7 @@ export default function AnalyticsPage() {
     if (finalScore >= 80) {
       status = "Sangat Baik";
       tone = "income";
-      description = `Gokil! Pengeluaran lo cuma ${expensePercent}% dari pemasukan. Sisa duit lo yang disimpen mencapai ${Math.round(savingRatio * 100)}%. Total saldo lo saat ini aman ${formatIDR(balance)}. Mantap bener, pertahanin terus!`;
+      description = `Gokil! Pengeluaran lo cuma ${expensePercent}% dari pemasukan. Sisa duit lo yang disimpen mencapai ${Math.round(savingRatio * 100)}%. Total saldo saat ini aman ${formatIDR(balance)}. Mantap bener, pertahanin terus!`;
     } else if (finalScore >= 60) {
       status = "Baik";
       tone = "income";
