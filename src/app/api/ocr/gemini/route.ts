@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 import { ocrRequestSchema, createErrorResponse } from "@/lib/validation";
 
 export const runtime = "nodejs";
-// External OCR model (Cloudflare tunnel → ollama) can take >10s on real
-// receipts; the Vercel Hobby default would kill the function mid-request.
-export const maxDuration = 60;
 
 interface AiOcrResponse {
   merchant?: string;
