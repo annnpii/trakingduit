@@ -1,6 +1,6 @@
 /* TrackingDuit service worker — offline shell + runtime caching. */
 
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL_CACHE = `td-shell-${VERSION}`;
 const RUNTIME_CACHE = `td-runtime-${VERSION}`;
 
