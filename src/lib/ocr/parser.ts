@@ -1,6 +1,20 @@
 import type { ParsedReceipt } from "../types";
 import { parseAmount, toDateKey } from "../utils";
 
+/**
+ * Single-item receipts (SPBU/BBM): force qty × price ≈ total so a misread
+ * unit price (e.g. 10.002 read as 15.898) can't leak into the item total.
+ * Only touches the 1-item case where the arithmetic is unambiguous.
+ */
+export function reconcileItemTotal(p: ParsedReceipt): ParsedReceipt {
+  if (!p.total || p.items.length !== 1) return p;
+  const it = p.items[0];
+  if (!it.qty || it.qty <= 0) return p;
+  const lineTotal = it.qty * it.price;
+  if (Math.abs(lineTotal - p.total) / p.total < 0.02) return p;
+  return { ...p, items: [{ ...it, price: Math.round(p.total / it.qty) }] };
+}
+
 const TOTAL_KEYS = [
   "grand total",
   "total bayar",
@@ -183,7 +197,7 @@ export function parseReceipt(rawText: string): ParsedReceipt {
     if (Math.abs(itemsSum - total) / total < 0.25) confidence += 0.05;
   }
 
-  return {
+  return reconcileItemTotal({
     merchant,
     date,
     total,
@@ -192,5 +206,5 @@ export function parseReceipt(rawText: string): ParsedReceipt {
     items,
     category_hint: merchant?.toLowerCase(),
     confidence: Math.min(1, Number(confidence.toFixed(2))),
-  };
+  });
 }

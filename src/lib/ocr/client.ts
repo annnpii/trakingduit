@@ -1,6 +1,7 @@
 "use client";
 
 import type { ParsedReceipt, Receipt } from "../types";
+import { reconcileItemTotal } from "./parser";
 
 export interface OcrResult {
   text: string;
@@ -57,9 +58,9 @@ function structuredToParsed(s: {
   date?: string;
   total?: number;
   tax?: number;
-  items?: { name: string; qty?: number; price: number }[];
+  items?: { name: string; qty?: number; unit?: string; price: number }[];
 }): ParsedReceipt {
-  return {
+  return reconcileItemTotal({
     merchant: s.merchant || undefined,
     address: s.address || undefined,
     date: s.date || undefined,
@@ -68,7 +69,7 @@ function structuredToParsed(s: {
     items: (s.items ?? []).filter((i) => i && i.name && i.price > 0),
     category_hint: s.merchant?.toLowerCase(),
     confidence: 0.9,
-  };
+  });
 }
 
 /** Server-side Gemini Flash — best for thermal receipts, structured extraction. */

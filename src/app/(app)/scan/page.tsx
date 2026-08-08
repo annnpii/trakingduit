@@ -16,7 +16,7 @@ import {
 import { db } from "@/lib/db";
 import { createReceipt, deleteReceipt, guessCategory, updateReceipt } from "@/lib/repo";
 import { prepareImage, runOcr } from "@/lib/ocr/client";
-import { parseReceipt } from "@/lib/ocr/parser";
+import { parseReceipt, reconcileItemTotal } from "@/lib/ocr/parser";
 import type { ParsedReceipt, Receipt } from "@/lib/types";
 import { cn, formatIDR, toDateKey } from "@/lib/utils";
 import {
@@ -203,7 +203,7 @@ export default function ScanPage() {
                   </p>
                   <p className="text-xs text-muted">
                     {r.parsed.date ?? r.created_at.slice(0, 10)} ·{" "}
-                    {r.engine === "gemini" ? "Gemini AI" : r.engine === "google-vision" ? "Vision" : "Tesseract"}
+                    {r.engine === "gemini" ? "Gemini AI" : r.engine === "ai-ocr" ? "AI OCR" : r.engine === "google-vision" ? "Vision" : "Tesseract"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -281,15 +281,20 @@ function ReceiptDetail({
   onShowRaw: () => void;
   onPatch: (patch: Partial<ParsedReceipt>) => void;
 }) {
-  const p = receipt.parsed;
+  // Reconcile stored single-item totals on display too — older receipts may
+  // hold a misread unit price (e.g. SPBU 10.002 read as 15.898).
+  const p = reconcileItemTotal(receipt.parsed);
   const lowConfidence = p.confidence < 0.6;
+  const itemsSum = p.items.reduce((a, i) => a + (i.qty ? i.qty * i.price : i.price), 0);
+  const itemsMismatch =
+    p.total != null && itemsSum > 0 && Math.abs(itemsSum - p.total) / p.total > 0.25;
 
   return (
     <Card className="overflow-hidden">
       <CardHeader
         title="Hasil pembacaan"
         subtitle={`Akurasi perkiraan ${Math.round(p.confidence * 100)}% · ${
-          receipt.engine === "gemini" ? "Gemini AI" : receipt.engine === "google-vision" ? "Google Vision" : "Tesseract"
+          receipt.engine === "gemini" ? "Gemini AI" : receipt.engine === "ai-ocr" ? "AI OCR" : receipt.engine === "google-vision" ? "Google Vision" : "Tesseract"
         }`}
         action={
           <Button variant="ghost" size="sm" onClick={onShowRaw}>
@@ -316,6 +321,15 @@ function ReceiptDetail({
               Hasil kurang yakin. Cek nominal dan tanggal sebelum menyimpan.
             </p>
           ) : null}
+
+          <div className="rounded-xl border border-border bg-surface-2/60 px-3 py-2.5">
+            <p className="text-sm font-semibold leading-snug">
+              {p.merchant ?? "Nama toko belum terbaca"}
+            </p>
+            {p.address ? (
+              <p className="mt-0.5 truncate text-xs text-muted">{p.address}</p>
+            ) : null}
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <EditableField
@@ -351,21 +365,47 @@ function ReceiptDetail({
           />
 
           {p.items.length ? (
-            <div className="rounded-xl border border-border">
+            <div className="overflow-hidden rounded-xl border border-border">
               <p className="border-b border-border px-3 py-2 text-xs font-medium">
                 Item terbaca ({p.items.length})
               </p>
-              <ul className="max-h-40 divide-y divide-border overflow-y-auto text-xs">
-                {p.items.map((item, i) => (
-                  <li key={i} className="flex items-center justify-between gap-3 px-3 py-1.5">
-                    <span className="truncate">
-                      {item.qty ? `${item.qty}× ` : ""}
-                      {item.name}
-                    </span>
-                    <span className="num text-muted">{formatIDR(item.price)}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="max-h-48 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted">
+                      <th className="px-3 py-1.5 text-left font-medium">Item</th>
+                      <th className="px-2 py-1.5 text-right font-medium">Qty</th>
+                      <th className="px-2 py-1.5 text-right font-medium">Harga</th>
+                      <th className="px-3 py-1.5 text-right font-medium">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {p.items.map((item, i) => (
+                      <tr key={i}>
+                        <td className="px-3 py-2">
+                          <span className="block truncate">{item.name}</span>
+                        </td>
+                        <td className="whitespace-nowrap px-2 py-2 text-right text-muted">
+                          {item.qty ? `${item.qty}${item.unit ? ` ${item.unit}` : "×"}` : "—"}
+                        </td>
+                        <td className="num whitespace-nowrap px-2 py-2 text-right text-muted">
+                          {formatIDR(item.price)}
+                        </td>
+                        <td className="num whitespace-nowrap px-3 py-2 text-right font-medium">
+                          {formatIDR(item.qty ? item.qty * item.price : item.price)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {itemsMismatch ? (
+                <p className="flex items-start gap-2 border-t border-border bg-warn/10 px-3 py-2 text-xs text-warn">
+                  <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+                  Total item ({formatIDR(itemsSum)}) gak nyambung sama total struk ({formatIDR(p.total!)})
+                  — cek harga satuan, bisa salah baca digit.
+                </p>
+              ) : null}
             </div>
           ) : null}
 

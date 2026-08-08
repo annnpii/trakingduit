@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { isSupabaseConfigured, supabaseFromRequest } from "@/lib/supabase";
 import { ocrRequestSchema, createErrorResponse } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
-interface GeminiOcrResponse {
+interface AiOcrResponse {
   merchant?: string;
   address?: string;
   date?: string;
@@ -14,59 +12,13 @@ interface GeminiOcrResponse {
   items?: Array<{
     name: string;
     qty?: number;
+    unit?: string;
     price: number;
   }>;
   raw_text: string;
 }
 
-/**
- * POST /api/ocr/gemini — Gemini Flash vision-based OCR with structured extraction.
- * Returns 501 when GEMINI_API_KEY is unset so the client falls back to other engines.
- * 
- * Uses Gemini 2.0 Flash (free tier: 1500 req/day) with structured prompting to
- * extract receipt fields directly, skipping keyword-based parsing.
- */
-export async function POST(request: Request) {
-  if (isSupabaseConfigured) {
-    const sb = supabaseFromRequest(request);
-    if (!sb) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const { data: auth } = await sb.auth.getUser();
-    if (!auth.user) return NextResponse.json({ error: "Token tidak valid" }, { status: 401 });
-  }
-
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "GEMINI_API_KEY belum diset", fallback: "vision" },
-      { status: 501 },
-    );
-  }
-
-  let image: string | undefined;
-  try {
-    const body = await request.json();
-    const validated = ocrRequestSchema.safeParse(body);
-    
-    if (!validated.success) {
-      return NextResponse.json(
-        createErrorResponse(`Invalid request: ${validated.error.issues[0]?.message}`),
-        { status: 400 }
-      );
-    }
-    
-    image = validated.data.image;
-  } catch {
-    return NextResponse.json(createErrorResponse("Body JSON tidak valid"), { status: 400 });
-  }
-  if (!image) return NextResponse.json(createErrorResponse("Field 'image' wajib diisi"), { status: 400 });
-
-  const base64 = image.includes(",") ? image.split(",")[1] : image;
-
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
-
-    const prompt = `Kamu adalah OCR expert untuk struk belanja Indonesia. Baca gambar struk ini dan extract informasi berikut dalam format JSON:
+const PROMPT = `Kamu adalah OCR expert untuk struk belanja Indonesia. Baca gambar struk ini dan extract informasi berikut dalam format JSON:
 
 {
   "merchant": "nama toko/merchant (string, atau null jika tidak ada)",
@@ -78,6 +30,7 @@ export async function POST(request: Request) {
     {
       "name": "nama item",
       "qty": "jumlah item (number, atau undefined jika tidak ada)",
+      "unit": "satuan item (string seperti 'pcs', 'kg', 'gram', 'liter', 'ml', 'botol', 'pack', atau undefined jika tidak ada)",
       "price": "harga item (number dalam rupiah)"
     }
   ],
@@ -93,40 +46,108 @@ PENTING:
 - Angka bisa pakai separator titik (1.000) atau koma (1,000)
 - Konversi semua angka ke number (buang separator)
 - Items: cari baris dengan format "nama_item harga" atau "qty x nama_item harga"
+- Satuan: cari kata seperti pcs, kg, gram, liter, ml, botol, pack setelah qty (misal '2 kg 30.000' → qty 2, unit kg). JANGAN masukkan satuan ke dalam nama item
+- PERHATIKAN ANGKA: struk thermal sering buram. Baca setiap digit dengan teliti, bedakan 1/7, 0/8, 3/8, 5/6. Baris 'nama qty x harga' → price = harga per satuan; baris 'nama harga' tanpa qty → price = harga baris
+- STRUK SPBU/BBM (PERTALITE, PERTAMAX, SOLAR, dll): format 'NAMA QTY LTR HARGA_PER_LITER TOTAL' (misal 'PERTALITE 4.2 LTR 10.002 42.010'). price = HARGA PER LITER (angka tengah, 10.002), jangan pernah jadikan total baris (42.010) sebagai price satuan
+- CROSS-CHECK: kalau struk cuma 1-2 item dan ada total, pastikan qty × price ≈ total (toleransi 2%). Kalau tidak nyambung (misal total 42.010, qty 4.2 → price harusnya ~10.002, BUKAN 15.898), berarti salah baca digit harga satuan — perbaiki
 - Jika tidak yakin, set null (bukan string kosong)
 - raw_text harus isi SEMUA teks yang kamu baca dari gambar
 
 Respond HANYA dengan JSON, tanpa markdown code fence atau text lain.`;
 
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          mimeType: "image/jpeg",
-          data: base64,
-        },
-      },
-    ]);
+/**
+ * POST /api/ocr/gemini — vision OCR via an OpenAI-compatible endpoint
+ * (configured with OCR_API_URL / OCR_API_KEY / OCR_MODEL, e.g. a combo
+ * proxy exposing an "ocr" model). Returns 501 when unset so the client
+ * falls back to other engines.
+ */
+export async function POST(request: Request) {
+  // No auth required: this route only OCRs the uploaded image and touches no
+  // user data, so local-only users (no cloud account) must reach it too.
 
-    const response = result.response;
-    const text = response.text();
-    
-    // Parse JSON response
-    let parsed: GeminiOcrResponse;
-    try {
-      // Remove markdown code fences if present
-      const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      parsed = JSON.parse(cleaned);
-    } catch (parseErr) {
+  const apiUrl = process.env.OCR_API_URL;
+  const apiKey = process.env.OCR_API_KEY;
+  const model = process.env.OCR_MODEL || "ocr";
+  if (!apiUrl || !apiKey) {
+    return NextResponse.json(
+      { error: "OCR_API_URL/OCR_API_KEY belum diset", fallback: "vision" },
+      { status: 501 },
+    );
+  }
+
+  let image: string | undefined;
+  try {
+    const body = await request.json();
+    const validated = ocrRequestSchema.safeParse(body);
+
+    if (!validated.success) {
       return NextResponse.json(
-        createErrorResponse("Gemini response bukan JSON valid"),
+        createErrorResponse(`Invalid request: ${validated.error.issues[0]?.message}`),
+        { status: 400 },
+      );
+    }
+
+    image = validated.data.image;
+  } catch {
+    return NextResponse.json(createErrorResponse("Body JSON tidak valid"), { status: 400 });
+  }
+  if (!image) return NextResponse.json(createErrorResponse("Field 'image' wajib diisi"), { status: 400 });
+
+  try {
+    const res = await fetch(`${apiUrl.replace(/\/$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        stream: false,
+        max_tokens: 2000,
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: PROMPT },
+              { type: "image_url", image_url: { url: image } },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      return NextResponse.json(
+        createErrorResponse(`OCR API error ${res.status}: ${body.slice(0, 200)}`),
+        { status: 502 },
+      );
+    }
+
+    const data = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    const text = data.choices?.[0]?.message?.content ?? "";
+
+    // Parse JSON response — strip code fences, then extract the JSON object
+    // even if the model wraps it with prose or reasoning.
+    let parsed: AiOcrResponse;
+    try {
+      const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      const start = cleaned.indexOf("{");
+      const end = cleaned.lastIndexOf("}");
+      const slice = start >= 0 && end > start ? cleaned.slice(start, end + 1) : cleaned;
+      parsed = JSON.parse(slice);
+    } catch {
+      return NextResponse.json(
+        createErrorResponse("OCR response bukan JSON valid"),
         { status: 502 },
       );
     }
 
     if (!parsed.raw_text?.trim()) {
       return NextResponse.json(
-        createErrorResponse("Gemini tidak bisa baca teks dari gambar"),
+        createErrorResponse("OCR tidak bisa baca teks dari gambar"),
         { status: 502 },
       );
     }
@@ -141,11 +162,11 @@ Respond HANYA dengan JSON, tanpa markdown code fence atau text lain.`;
         tax: parsed.tax,
         items: parsed.items || [],
       },
-      engine: "gemini",
+      engine: "ai-ocr",
     });
   } catch (err) {
     return NextResponse.json(
-      createErrorResponse(err instanceof Error ? err.message : "Gemini request gagal"),
+      createErrorResponse(err instanceof Error ? err.message : "OCR request gagal"),
       { status: 502 },
     );
   }

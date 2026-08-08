@@ -109,7 +109,7 @@ export interface ParsedReceipt {
   total?: number;
   subtotal?: number;
   tax?: number;
-  items: { name: string; qty?: number; price: number }[];
+  items: { name: string; qty?: number; unit?: string; price: number }[];
   category_hint?: string;
   confidence: number;
 }
@@ -120,7 +120,7 @@ export interface Receipt extends Syncable {
   raw_text: string;
   parsed: ParsedReceipt;
   status: "pending" | "confirmed" | "rejected";
-  engine: "tesseract" | "google-vision" | "gemini";
+  engine: "tesseract" | "google-vision" | "gemini" | "ai-ocr";
   transaction_id?: ID;
 }
 

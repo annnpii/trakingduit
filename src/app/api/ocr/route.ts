@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { isSupabaseConfigured, supabaseFromRequest } from "@/lib/supabase";
 import { ocrRequestSchema, createErrorResponse } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -17,12 +16,8 @@ interface VisionResponse {
  * in-browser Tesseract instead of failing the scan.
  */
 export async function POST(request: Request) {
-  if (isSupabaseConfigured) {
-    const sb = supabaseFromRequest(request);
-    if (!sb) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const { data: auth } = await sb.auth.getUser();
-    if (!auth.user) return NextResponse.json({ error: "Token tidak valid" }, { status: 401 });
-  }
+  // No auth required: this route only OCRs the uploaded image and touches no
+  // user data, so local-only users (no cloud account) must reach it too.
 
   const apiKey = process.env.GOOGLE_VISION_API_KEY;
   if (!apiKey) {
