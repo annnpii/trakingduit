@@ -165,8 +165,9 @@ export async function POST(request: Request) {
       engine: "ai-ocr",
     });
   } catch (err) {
+    console.error("OCR route error:", err);
     return NextResponse.json(
-      createErrorResponse(err instanceof Error ? err.message : "OCR request gagal"),
+      createErrorResponse(`${err instanceof Error ? `${err.name}: ${err.message}` : "OCR request gagal"}`),
       { status: 502 },
     );
   }
